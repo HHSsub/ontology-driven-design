@@ -1,7 +1,10 @@
 ﻿# ontology-rebuild
 
-프로젝트 전체의 위상도를 재생성합니다.
+Regenerates the L0-L3 topology map for the entire project.
 
-Slash command: \/ontology-rebuild\`n
+Slash command: `/ontology-rebuild`
+
+Run after major changes. Generates ONTOLOGY.md per folder and _WIKI.md at the root.
+
 See [skill file](https://github.com/HHSsub/ontology-driven-design/blob/main/skills/ontology-rebuild/SKILL.md) for full details.
 

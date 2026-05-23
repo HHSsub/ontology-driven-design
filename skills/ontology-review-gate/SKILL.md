@@ -3,37 +3,31 @@ name: ontology-review-gate
 description: Mandatory gate before any implementation, refactor, or architecture change. Runs an Ontology Court review — checks hierarchy purity, adaptive governance, execution economics, and recursive stability. Returns PASS or REJECT with required structural fixes.
 ---
 
-# /ontology-review-gate — 존재론 심판 게이트 (Ontology Review Court)
+# /ontology-review-gate — 존재론 검증 게이트 (Ontology Review Gate)
 
-L0: 모든 수정안·계획·리팩토링·거버넌스 변경은 ontology 정합성을 증명하기 전까지 존재할 수 없다.
+L0: 상체(L0~L1)가 하체(L2~L3) 실행을 살려야 한다. 이 게이트는 실행을 막는 장벽이 아니라, 방향 없는 실행이 낭비가 되는 것을 막는 명확성 검증이다.
 
-이 스킬은 다음 상황에서 **반드시** 호출된다:
+이 스킬은 다음 상황에서 호출한다:
 - 코드 작성 전
 - 리팩토링 전
-- budget 변경 전
-- retry 정책 변경 전
-- orchestration 수정 전
-- agent topology 수정 전
-- governance 수정 전
+- budget·retry·orchestration·topology·governance 변경 전
 
-호출 없이 implementation을 시작하면 **architecture violation**이다.
+**목적:** 실행 전에 L0 연결을 명확히 함으로써, 실행 후 방향 수정 비용을 제거한다.
 
 ---
 
 ## 핵심 원칙
 
-이 스킬은 "좋아보이는 수정"을 평가하지 않는다.
+이 게이트는 "좋아보이는 수정"을 평가하지 않는다. "L0에 연결되는가"를 검증한다.
 
-오직:
-- ontology integrity
-- hierarchy purity
-- execution economics
-- topology stability
-- adaptive governance
+검증 항목:
+- ontology integrity — L0까지 역추적 가능한가
+- hierarchy purity — 상하 계층 오염 없는가
+- execution economics — 실행 비용이 L0 기여 대비 정당한가
+- topology stability — 추가 시 전체 구조가 흔들리지 않는가
+- adaptive governance — 고정값이 아닌 적응형으로 설계됐는가
 
-만 심판한다.
-
-"작동할 것 같다"는 merge 근거가 아니다.
+"작동할 것 같다"는 PASS 근거가 아니다. "L0를 달성한다"가 PASS 근거다.
 
 ---
 

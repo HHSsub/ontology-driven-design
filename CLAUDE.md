@@ -20,11 +20,13 @@ This plugin provides 6 skills for purpose-driven AI workflows:
 Every action must connect to a purpose. No exceptions.
 
 ```
-L0  Business purpose      WHY this exists
-L1  System/doc goal       HOW it achieves L0
-L2  Feature unit          WHAT gets built
-L3  Implementation        WITH WHAT tools
+L0  Ontology / Purpose       궁극적 융합과 내재화 — the deepest reason this exists
+L1  Abstract / Structure     질서의 아키텍처 — design that bridges L0 to reality
+L2  Logic / Trade-off        현실과의 타협과 선택 — decisions, constraints, cost of choice
+L3  Execution / Instance     물리적 닻 — concrete code, tools, physical acts
 ```
+
+This is not a requirements checklist. L0 is ontological — it asks not "what is the goal" but "why does this need to exist at all." L2 is not feature decomposition — it is where reality forces trade-offs and choices must be recorded.
 
 **Rule:** If you cannot state L0, stop. Ask first.
 

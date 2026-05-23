@@ -23,16 +23,18 @@ claude plugin add HHSsub/odd
 
 ## The L0-L3 Framework
 
-ODD enforces a 4-layer purpose hierarchy across every task — code, reports, emails, architecture decisions:
+ODD enforces a 4-layer ontology hierarchy across every output — code, reports, emails, architecture decisions.
 
-| Level | Meaning | Example |
-|-------|---------|---------|
-| **L0** | Business purpose — WHY | "Automate SNS upload without user intervention" |
-| **L1** | System goal — HOW | "Music → Video → Upload end-to-end pipeline" |
-| **L2** | Feature unit — WHAT | "Clip synthesis", "Metadata generation" |
-| **L3** | Implementation — WITH WHAT | "Kling API polling", "ffmpeg concat" |
+| Level | Layer | Essence |
+|-------|-------|---------|
+| **L0** | Ontology / Purpose | 궁극적 융합과 내재화 — the deepest reason this needs to exist. Not "what is the goal" but "why does this exist at all." |
+| **L1** | Abstract / Structure | 질서의 아키텍처 — the invariant design that bridges L0 to reality. The gravity field that keeps all lower actions on orbit. |
+| **L2** | Logic / Trade-off | 현실과의 타협과 선택 — where structure meets reality and forces choices. Every decision here carries opportunity cost. |
+| **L3** | Execution / Instance | 물리적 닻 — the concrete act. Code, tools, physical steps. Without a strong L3, L0 cannot move a single step forward. |
 
 **Core rule:** Every action must trace back to L0. If you cannot state L0, stop.
+
+> This is not a requirements traceability framework. L0 is ontological — existence-level. L2 is not feature decomposition — it is trade-off record.
 
 ---
 
