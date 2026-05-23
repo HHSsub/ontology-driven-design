@@ -1,0 +1,13 @@
+{
+  "name": "ontology-driven-design",
+  "version": "1.0.0",
+  "description": "ODD — Ontology Driven Design. A Claude Code plugin for purpose-driven AI workflows.",
+  "scripts": {
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3"
+  }
+}
