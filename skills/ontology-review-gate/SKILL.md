@@ -5,7 +5,7 @@ description: Mandatory gate before any implementation, refactor, or architecture
 
 # /ontology-review-gate — 존재론 검증 게이트 (Ontology Review Gate)
 
-L0: 상체(L0~L1)가 하체(L2~L3) 실행을 살려야 한다. 이 게이트는 실행을 막는 장벽이 아니라, 방향 없는 실행이 낭비가 되는 것을 막는 명확성 검증이다.
+L0: 목적 없는 실행은 낭비다. 이 게이트는 실행을 막는 장벽이 아니라, L0 연결이 명확해진 이후 실행이 최대 효율로 작동하게 하는 명확성 검증이다. 상위 위계가 방향을 지시하고, 그 방향이 확인된 후 하위 위계의 실행이 시작된다.
 
 이 스킬은 다음 상황에서 호출한다:
 - 코드 작성 전
