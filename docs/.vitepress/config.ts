@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
+  base: '/ontology-driven-design/',
   title: 'ODD',
   description: 'Ontology Driven Design — Purpose-driven AI workflows for Claude Code',
 
