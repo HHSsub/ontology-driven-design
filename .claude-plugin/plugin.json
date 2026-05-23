@@ -1,0 +1,20 @@
+{
+  "name": "ontology-driven-design",
+  "description": "ODD — Ontology Driven Design. Purpose-driven AI workflows based on Pyramid Thinking (피라미드사고법). Enforces L0-L3 ontology hierarchy across all tasks: code, reports, emails, architecture decisions.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Hwang Hoe Sun (황회선)",
+    "email": "hhoesun@gmail.com"
+  },
+  "homepage": "https://HHSsub.github.io/ontology-driven-design",
+  "repository": "https://github.com/HHSsub/ontology-driven-design",
+  "keywords": [
+    "ontology",
+    "pyramid-thinking",
+    "purpose-driven",
+    "ai-workflows",
+    "architecture",
+    "entropy",
+    "technical-debt"
+  ]
+}
