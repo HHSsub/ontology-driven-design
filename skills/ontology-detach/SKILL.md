@@ -1,6 +1,6 @@
 ---
 name: ontology-detach
-description: Use whenever you write or review code that binds, fixes, or persists something — values, dependencies, state, assumptions, identifiers, sequences. Detects "존재집착" (existence-clinging) where code freezes a transient choice into permanent law, then guides the redesign so every binding has an exit condition and truth is re-derived at the moment of use, not stored as fact.
+description: Use whenever you write or review code that binds, fixes, or persists something — values, dependencies, state, assumptions, identifiers, sequences. Detects "존재교착" (existence-clinging) where code freezes a transient choice into permanent law, then guides the redesign so every binding has an exit condition and truth is re-derived at the moment of use, not stored as fact.
 ---
 
 # Ontology Detach — 탈존재화 (De-Existence) Principle
@@ -11,7 +11,7 @@ description: Use whenever you write or review code that binds, fixes, or persist
 
 코드는 끊임없이 "고정"하려 한다 — 값을 변수에, 의존성을 import에, 상태를 파일에, 가정을 하드코딩에, 순서를 절차적 흐름에, ID를 정적 매핑에. 각 고정은 "지금 이 선택이 영원할 것"이라는 거짓 전제다. 외부 환경(시간, 프로세스, 사용자, 데이터, API)은 반드시 변하므로 교체조건 없는 모든 고정은 결국 거짓말이 된다.
 
-## L1: 진단 — 존재집착의 6가지 차원
+## L1: 진단 — 존재교착의 6가지 차원
 
 각 차원에서 같은 질문을 한다: **"이 binding의 교체조건은 무엇인가? 명시되어 있는가?"**
 
@@ -71,6 +71,27 @@ description: Use whenever you write or review code that binds, fixes, or persist
 - 누적되는 자료구조(list, dict, log file) 발견 → 상한이 어디 있는가
 - 두 개 이상의 ID가 같은 개체를 가리킴 발견 → 통합 가능한가
 - 절차적 흐름 발견 → 중간 실패 시 어디로 가는가
+
+---
+
+## L레벨별 존재교착 유형 — 하드코딩이 만드는 부채
+
+하드코딩은 단일 현상이 아니다. 각 위계층에 대칭되는 교착 유형이 존재하고, 각각 다른 종류의 부채를 만든다.
+
+| 위계 | 교착 유형 | 구체 예시 | 발생하는 부채 |
+|------|---------|---------|------------|
+| **L3** 실행/인스턴스 | **숫자·값 하드코딩** | `timeout=60`, `retry=3`, `MAX=100` 같은 근거 없는 임의값 | **기술부채** — 환경이 바뀌면 코드가 뒤처지고, 이유를 모르니 건드리지 못함 |
+| **L2** 로직/트레이드오프 | **유즈케이스 하드코딩** | 특정 케이스만 근거 없이 fix한 if문, 확장성 고려 없는 특정 플로우 분기 | **의도부채** — 왜 이 선택을 했는지 기록이 없어 맥락 없이 수정되거나 방치됨 |
+| **L1** 추상/구조 | **구조 하드코딩** | 특정 agent topology, 특정 의존성 구조를 불변으로 가정한 설계 | **아키텍처 부채** — 구조가 바뀌어야 할 때 전체가 흔들리고 교체 비용이 기하급수 증가 |
+| **L0** 존재론/목적 | **목적 하드코딩** | L0 자체가 특정 구현 방식·도구·플랫폼에 묶여 있음 | **방향 부채** — 비즈니스가 바뀌어도 목적을 수정하지 못하고 잘못된 방향으로 계속 최적화 |
+
+**엔트로피와의 연결:**
+
+교착이 쌓일수록 코드베이스의 무질서도(엔트로피)가 높아진다. L3 교착은 코드를 경직시키고, L2 교착은 맥락을 잃게 하고, L1 교착은 구조를 굳히며, L0 교착은 방향 자체를 잃게 만든다.
+
+탈존재(De-Existence)는 각 층위에서 이 교착을 해제해 시스템이 살아있는 상태로 유지되도록 한다.
+
+---
 
 ## 메타원칙
 
