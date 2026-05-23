@@ -5,7 +5,6 @@
 A Claude Code plugin that enforces purpose-driven AI workflows through the **Pyramid Thinking** (피라미드사고법) framework — created by [Hwang Hoe Sun](https://knowgram.vercel.app).
 
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://claude.ai/code)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/Docs-HHSsub.github.io-orange)](https://HHSsub.github.io/ontology-driven-design)
 
 ---
@@ -91,8 +90,3 @@ Full documentation: **[HHSsub.github.io/ontology-driven-design](https://HHSsub.g
 Creator of Pyramid Thinking (피라미드사고법)  
 [knowgram.vercel.app](https://knowgram.vercel.app)
 
----
-
-## License
-
-MIT

@@ -24,7 +24,6 @@ export default defineConfig({
               items: [
                 { text: '시작하기', link: '/guide/getting-started' },
                 { text: '설치', link: '/guide/installation' },
-                { text: '기본 사용법', link: '/guide/usage' },
               ]
             }
           ],
@@ -44,7 +43,6 @@ export default defineConfig({
           ]
         },
         footer: {
-          message: 'MIT License',
           copyright: 'Copyright © 2026 황회선 (Hwang Hoe Sun) · <a href="https://knowgram.vercel.app">KnowGram</a>'
         },
         socialLinks: [
@@ -72,7 +70,6 @@ export default defineConfig({
               items: [
                 { text: 'Getting Started', link: '/en/guide/getting-started' },
                 { text: 'Installation', link: '/en/guide/installation' },
-                { text: 'Basic Usage', link: '/en/guide/usage' },
               ]
             }
           ],
@@ -92,7 +89,6 @@ export default defineConfig({
           ]
         },
         footer: {
-          message: 'MIT License',
           copyright: 'Copyright © 2026 Hwang Hoe Sun (황회선) · <a href="https://knowgram.vercel.app">KnowGram</a>'
         },
         socialLinks: [
