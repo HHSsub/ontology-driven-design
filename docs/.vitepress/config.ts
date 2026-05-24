@@ -31,15 +31,22 @@ export default defineConfig({
           ],
           '/skills/': [
             {
-              text: '스킬',
+              text: '스킬 (수동 호출)',
               items: [
                 { text: '전체 목록', link: '/skills/' },
+                { text: 'odd-onboarding', link: '/skills/odd-onboarding' },
                 { text: 'pyramid-ontology', link: '/skills/pyramid-ontology' },
                 { text: 'ontology-detach', link: '/skills/ontology-detach' },
                 { text: 'ontology-rebuild', link: '/skills/ontology-rebuild' },
                 { text: 'pyramid-label', link: '/skills/pyramid-label' },
                 { text: 'pyramid-topology', link: '/skills/pyramid-topology' },
                 { text: 'ontology-review-gate', link: '/skills/ontology-review-gate' },
+              ]
+            },
+            {
+              text: '훅 (자동 강제)',
+              items: [
+                { text: '훅 설명', link: '/skills/hooks' },
               ]
             }
           ]
@@ -77,15 +84,22 @@ export default defineConfig({
           ],
           '/en/skills/': [
             {
-              text: 'Skills',
+              text: 'Skills (Manual)',
               items: [
                 { text: 'All Skills', link: '/en/skills/' },
+                { text: 'odd-onboarding', link: '/en/skills/odd-onboarding' },
                 { text: 'pyramid-ontology', link: '/en/skills/pyramid-ontology' },
                 { text: 'ontology-detach', link: '/en/skills/ontology-detach' },
                 { text: 'ontology-rebuild', link: '/en/skills/ontology-rebuild' },
                 { text: 'pyramid-label', link: '/en/skills/pyramid-label' },
                 { text: 'pyramid-topology', link: '/en/skills/pyramid-topology' },
                 { text: 'ontology-review-gate', link: '/en/skills/ontology-review-gate' },
+              ]
+            },
+            {
+              text: 'Hooks (Auto-enforced)',
+              items: [
+                { text: 'Hook Details', link: '/en/skills/hooks' },
               ]
             }
           ]

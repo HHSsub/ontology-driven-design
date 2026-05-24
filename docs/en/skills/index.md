@@ -1,11 +1,12 @@
 # Skills
 
-ODD provides 6 skills implementing the Pyramid Thinking principles.
+ODD operates in two modes: skills (manual invocation) and hooks (automatic enforcement).
 
-## Skill Reference
+## Skills — Manual invocation (`/command`)
 
 | Skill | Command | When to use |
 |-------|---------|-------------|
+| [odd-onboarding](./odd-onboarding) | `/odd-onboarding` | **Before any project/feature** — lock in L0 purpose |
 | [pyramid-ontology](./pyramid-ontology) | `/pyramid-ontology` | **Start of every task** — declare L0-L3 |
 | [ontology-detach](./ontology-detach) | `/ontology-detach` | Writing or reviewing code bindings |
 | [ontology-rebuild](./ontology-rebuild) | `/ontology-rebuild` | After major changes — update topology |
@@ -13,9 +14,20 @@ ODD provides 6 skills implementing the Pyramid Thinking principles.
 | [pyramid-topology](./pyramid-topology) | `/pyramid-topology` | Before refactors — check integrity |
 | [ontology-review-gate](./ontology-review-gate) | `/ontology-review-gate` | Before implementation — court review |
 
+## Hooks — Automatic enforcement (no user command needed)
+
+| Hook | Fires When | Checks |
+|------|-----------|--------|
+| [pyramid_guard](./hooks) | Every Edit/Write save | L-level integrity + SSOT violations |
+| [ontology_declare_enforce](./hooks) | Every response completion | L0 declaration + dependency chain |
+| [git_push_enforce](./hooks) | Every response completion | Uncommitted/unpushed session files |
+
+→ [Hook details](./hooks)
+
 ## Skill Hierarchy
 
 ```
+odd-onboarding            ← Before start — establishes project constitution
 pyramid-ontology          ← Top-level — constitution for all skills
   ├── ontology-detach     ← L0 applied to bindings
   ├── ontology-rebuild    ← Topology documentation
@@ -27,10 +39,20 @@ pyramid-ontology          ← Top-level — constitution for all skills
 ## Recommended Order
 
 ```bash
-/pyramid-ontology       # 1. Start
-/ontology-detach        # 2. During coding
-/pyramid-topology       # 3. Before refactor
-/ontology-review-gate   # 4. Before implementation
-/pyramid-label          # 5. Before review
-/ontology-rebuild       # 6. After completion
+# 0. Before any project or feature
+/odd-onboarding
+
+# 1. Start of session
+/pyramid-ontology
+
+# 2. During coding (hooks auto-monitor SSOT + L0 contamination)
+/ontology-detach
+
+# 3. Before refactors
+/pyramid-topology
+/ontology-review-gate
+
+# 4. After completion
+/pyramid-label
+/ontology-rebuild
 ```
