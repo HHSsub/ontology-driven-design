@@ -23,15 +23,15 @@ features:
   - icon: 🔓
     title: 탈존재 원칙 (ontology-detach)
     details: 모든 binding에 교체조건을 강제한다. 하드코딩은 거짓말이다. 시간이 지나면 반드시 깨진다.
+  - icon: 🔗
+    title: SSOT 강제 (hooks — 자동 발동)
+    details: 동일 개념 집합이 N개 독립 위치에 중복되면 자동 차단. 열거형 개념 모음 수정 시 의존성 체인 전파를 강제한다.
   - icon: 🗺️
     title: 위상도 재빌드 (ontology-rebuild)
     details: 프로젝트 전체의 L0-L3 위상도를 자동 생성. 폴더별 ONTOLOGY.md + 루트 _WIKI.md.
   - icon: 🏷️
     title: 라벨링 (pyramid-label)
     details: 어떤 언어든 코드 단위 전체에 L0-L3 라벨을 일괄 적용. Python, TypeScript, Go, YAML, Markdown.
-  - icon: 📐
-    title: 위계 점검 (pyramid-topology)
-    details: 미라벨 단위, L0 오염, 고아 파일, 순환 의존을 탐지. 리팩토링 전 필수.
   - icon: ⚖️
     title: 심판 게이트 (ontology-review-gate)
     details: 구현 전 ontology court 심사. PASS 없이는 코드를 짤 수 없다.
