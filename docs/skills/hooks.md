@@ -4,11 +4,43 @@ ODD 플러그인은 3개의 훅을 자동으로 설치합니다. 훅은 Claude C
 
 ## 발동 방식 요약
 
-| 훅 | 발동 시점 | 검사 내용 |
-|----|----------|---------|
-| `pyramid_guard` | Edit/Write 저장 시마다 | L 레벨 선언 정합성 + SSOT 중복 진실 탐지 |
-| `ontology_declare_enforce` | Claude 응답 완료 시마다 | L0 선언 존재 여부 + 의존성 체인 검증 |
-| `git_push_enforce` | Claude 응답 완료 시마다 | 이번 세션 수정 파일 미커밋/미푸시 차단 |
+| 훅 | 타입 | 발동 시점 | 검사 내용 |
+|----|------|----------|---------|
+| `pyramid_ontology_gate` | PreToolUse | Edit/Write **실행 전** | L0 선언 없으면 수정 자체를 원천 차단 |
+| `pyramid_guard` | PostToolUse | Edit/Write 저장 시마다 | L 레벨 정합성 + SSOT 중복 진실 탐지 |
+| `ontology_declare_enforce` | Stop | 응답 완료 시마다 | L0 선언 + 의존성 체인 검증 (사후 확인) |
+| `git_push_enforce` | Stop | 응답 완료 시마다 | 이번 세션 수정 파일 미커밋/미푸시 차단 |
+
+**superpowers 미설치 환경에서도 모두 작동합니다.** Claude Code `settings.json` 훅으로 동작하며 superpowers 플러그인과 무관합니다.
+
+---
+
+---
+
+## pyramid_ontology_gate
+
+**파일**: `hooks/pyramid_ontology_gate.py`  
+**발동**: PreToolUse — `Edit`, `Write`, `NotebookEdit` **실행 전에** 발동
+
+### 핵심 차이
+
+`ontology_declare_enforce`(Stop 훅)은 수정이 완료된 후에 차단합니다.  
+`pyramid_ontology_gate`는 **파일이 바뀌기 전에** 차단합니다 — 수정 자체를 막습니다.
+
+### 검사 항목
+
+세션 전체 transcript를 탐색해 `L0:` 선언이 한 번이라도 있었는지 확인합니다.  
+없으면 Edit/Write를 차단합니다.
+
+```
+❌ 차단: 세션 시작 후 L0 선언 없이 파일 수정 시도
+✅ 통과: 세션 어디서든 "L0: ..." 선언이 있으면 이후 모든 수정 허용
+```
+
+**면제 대상** (무한루프 방지):
+- `~/.claude/hooks/*.py` — 훅 파일 자체
+- `settings.json`, `hooks.json` — 설정 파일
+- `CLAUDE.md`, `ONBOARDING.md` — 온보딩/규칙 문서
 
 ---
 

@@ -4,11 +4,43 @@ The ODD plugin installs 3 hooks automatically. Hooks fire **without any user com
 
 ## Summary
 
-| Hook | Fires When | Checks |
-|------|-----------|--------|
-| `pyramid_guard` | Every Edit/Write save | L-level declaration integrity + SSOT duplicate truth |
-| `ontology_declare_enforce` | Every response completion | L0 declaration present + dependency chain verified |
-| `git_push_enforce` | Every response completion | Session-edited files committed + pushed |
+| Hook | Type | Fires When | Checks |
+|------|------|-----------|--------|
+| `pyramid_ontology_gate` | PreToolUse | **Before** Edit/Write executes | Blocks the edit if no L0 declared in session |
+| `pyramid_guard` | PostToolUse | After every Edit/Write save | L-level integrity + SSOT duplicate truth |
+| `ontology_declare_enforce` | Stop | Every response completion | L0 declaration + dependency chain (post-check) |
+| `git_push_enforce` | Stop | Every response completion | Session-edited files committed + pushed |
+
+**Works without superpowers installed.** All hooks operate via Claude Code `settings.json` — independent of the superpowers plugin.
+
+---
+
+---
+
+## pyramid_ontology_gate
+
+**File**: `hooks/pyramid_ontology_gate.py`  
+**Trigger**: PreToolUse — fires **before** `Edit`, `Write`, or `NotebookEdit` executes
+
+### Key difference from Stop hook
+
+`ontology_declare_enforce` (Stop hook) blocks after the edit is already done.  
+`pyramid_ontology_gate` blocks **before the file changes** — prevents the edit entirely.
+
+### What it checks
+
+Searches the entire session transcript for at least one `L0:` declaration.  
+If none found, the Edit/Write is blocked.
+
+```
+❌ BLOCKED: attempt to edit files with no L0 declared in this session
+✅ PASS:    any "L0: ..." declaration anywhere in the session unlocks all edits
+```
+
+**Exempt from checking** (prevents infinite loops):
+- `~/.claude/hooks/*.py` — hook files themselves
+- `settings.json`, `hooks.json` — configuration files
+- `CLAUDE.md`, `ONBOARDING.md` — onboarding/rule documents
 
 ---
 

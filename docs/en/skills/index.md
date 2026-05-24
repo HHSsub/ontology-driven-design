@@ -1,58 +1,79 @@
-# Skills
+# Skills & Hooks
 
-ODD operates in two modes: skills (manual invocation) and hooks (automatic enforcement).
+ODD operates in three invocation modes.
 
-## Skills — Manual invocation (`/command`)
+---
+
+## 1. Always Auto-invoked — superpowers framework
+
+These skills fire **without any slash command** — Claude invokes them automatically when the `description` condition matches the current task.
+
+| Skill | Auto-trigger condition | Role |
+|-------|----------------------|------|
+| [pyramid-ontology](./pyramid-ontology) | **At the start of any task** | Declares L0-L3 as the governing law for all decisions |
+| [ontology-detach](./ontology-detach) | Whenever writing or reviewing code bindings | Detects hardcoding without exit conditions |
+| [ontology-review-gate](./ontology-review-gate) | Before any implementation or refactor | Ontology Court — PASS required before coding begins |
+
+---
+
+## 2. Situational manual invocation (`/command`)
+
+Invoked intentionally by the user in specific situations.
 
 | Skill | Command | When to use |
 |-------|---------|-------------|
-| [odd-onboarding](./odd-onboarding) | `/odd-onboarding` | **Before any project/feature** — lock in L0 purpose |
-| [pyramid-ontology](./pyramid-ontology) | `/pyramid-ontology` | **Start of every task** — declare L0-L3 |
-| [ontology-detach](./ontology-detach) | `/ontology-detach` | Writing or reviewing code bindings |
-| [ontology-rebuild](./ontology-rebuild) | `/ontology-rebuild` | After major changes — update topology |
-| [pyramid-label](./pyramid-label) | `/pyramid-label` | Before code review — label all units |
-| [pyramid-topology](./pyramid-topology) | `/pyramid-topology` | Before refactors — check integrity |
-| [ontology-review-gate](./ontology-review-gate) | `/ontology-review-gate` | Before implementation — court review |
+| [odd-onboarding](./odd-onboarding) | `/odd-onboarding` | Before starting any new project or feature |
+| [pyramid-label](./pyramid-label) | `/pyramid-label` | Before code review, after adding new files |
+| [pyramid-topology](./pyramid-topology) | `/pyramid-topology` | Before refactors — hierarchy integrity check |
+| [ontology-rebuild](./ontology-rebuild) | `/ontology-rebuild` | After major changes — update topology docs |
 
-## Hooks — Automatic enforcement (no user command needed)
+---
 
-| Hook | Fires When | Checks |
-|------|-----------|--------|
-| [pyramid_guard](./hooks) | Every Edit/Write save | L-level integrity + SSOT violations |
-| [ontology_declare_enforce](./hooks) | Every response completion | L0 declaration + dependency chain |
-| [git_push_enforce](./hooks) | Every response completion | Uncommitted/unpushed session files |
+## 3. Claude Code Hooks — Infrastructure-level enforcement
+
+Registered in `~/.claude/settings.json`.  
+These fire **regardless of Claude's judgment or superpowers installation** — invoked by Claude Code infrastructure.
+
+| Hook | Type | Fires When | Checks |
+|------|------|-----------|--------|
+| [pyramid_ontology_gate](./hooks) | PreToolUse | **Before** Edit/Write executes | Blocks edit if no L0 declared — no superpowers needed |
+| [pyramid_guard](./hooks) | PostToolUse | Every Edit/Write save | L-level integrity + SSOT duplicate truth |
+| [ontology_declare_enforce](./hooks) | Stop | Every response completion | L0 declaration + dependency chain |
+| [git_push_enforce](./hooks) | Stop | Every response completion | Uncommitted/unpushed session files |
 
 → [Hook details](./hooks)
 
-## Skill Hierarchy
+---
+
+## Invocation mode comparison
 
 ```
-odd-onboarding            ← Before start — establishes project constitution
-pyramid-ontology          ← Top-level — constitution for all skills
-  ├── ontology-detach     ← L0 applied to bindings
-  ├── ontology-rebuild    ← Topology documentation
-  ├── pyramid-label       ← Code unit labeling
-  ├── pyramid-topology    ← Hierarchy integrity check
-  └── ontology-review-gate ← Pre-implementation gate
+superpowers auto-invoke         Claude Code hooks
+─────────────────────────       ─────────────────────────
+Claude reads description,        settings.json → infrastructure
+decides "this skill applies"     fires unconditionally at
+→ cannot be silently skipped     Edit/Stop events
+                                 → Claude cannot bypass
 ```
 
-## Recommended Order
+## Recommended workflow
 
 ```bash
-# 0. Before any project or feature
-/odd-onboarding
+# New project
+/odd-onboarding              ← manual: establish L0 purpose
 
-# 1. Start of session
-/pyramid-ontology
+# Start working (pyramid-ontology fires automatically)
 
-# 2. During coding (hooks auto-monitor SSOT + L0 contamination)
-/ontology-detach
+# During coding
+# → pyramid_guard hook: auto-checks every Edit/Write
+# → ontology-detach: auto-fires when writing bindings
 
-# 3. Before refactors
-/pyramid-topology
-/ontology-review-gate
+# Before refactors
+/pyramid-topology             ← manual
+# → ontology-review-gate: auto-fires before implementation
 
-# 4. After completion
-/pyramid-label
-/ontology-rebuild
+# After completion
+/pyramid-label                ← manual
+/ontology-rebuild             ← manual
+# → git_push_enforce hook: auto-checks on every response
 ```
