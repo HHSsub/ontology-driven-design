@@ -2,10 +2,13 @@
 Stop 훅 — 온톨로지 선언 강제
 
 L0: 코드 수정 전 존재 목적 선언이 없는 행동은 금지
-L1: 모든 Edit/Write 턴에 L0 선언이 있었는지 검증 + 열거형 개념 모음 수정 시 의존성 체인 검증
-L2-A: transcript 파싱 → Edit/Write 포함 턴 탐지 → 선행 L0 선언 확인 → 없으면 차단
+L1: Edit/Write가 있는 턴 탐지 → 세션 전체에서 선행 L0 선언 확인 → 없으면 차단
+    + 열거형 개념 모음 수정 시 의존성 체인 검증
+L2-A: transcript 전체 파싱 → Edit/Write 탐지 → 세션 전체 L0 선언 여부 확인
+      (LOOKBACK 고정 window 제거 — 긴 세션에서 초반 L0 선언을 못 보는 오탐지 방지)
 L2-B: 열거형 개념 모음(리스트·레지스트리) 수정 감지 → grep 증거 없으면 차단
-L3: transcript JSONL 읽기 → 역순 탐색 → 패턴 검사 → exit 2
+      (grep 탐색 범위는 최근 LOOKBACK_MESSAGES 유지 — 너무 오래된 grep은 무관할 수 있음)
+L3: transcript JSONL 읽기 → 전체 탐색 → 패턴 검사 → exit 2
 
 ━━ 탈도구 원칙 ━━
 이 훅의 L0/L1은 특정 도구·언어에 종속되지 않는다.
@@ -135,10 +138,11 @@ def main() -> int:
     if not has_any_edit:
         return 0
 
-    # 최근 LOOKBACK_MESSAGES 개 메시지에서 L0 선언 탐색
-    recent = messages[-LOOKBACK_MESSAGES:]
+    # L2-A: 세션 전체에서 L0 선언 탐색
+    # — LOOKBACK_MESSAGES window 제거: 긴 세션에서 초반 L0 선언을 못 보는 오탐지 방지
+    # — 세션 초반에 L0를 한 번 선언했으면 이후 모든 수정에서 유효
     declaration_found = False
-    for msg in recent:
+    for msg in messages:
         if msg["role"] == "assistant":
             text = _extract_text(msg["content"])
             if _has_l0_declaration(text):
