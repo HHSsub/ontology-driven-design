@@ -14,6 +14,7 @@ ODD는 세 가지 발동 방식으로 동작합니다.
 | [pyramid-ontology](./pyramid-ontology) | **어떤 작업이든 시작할 때** | L0-L3 위계를 세션 헌법으로 선언 |
 | [ontology-detach](./ontology-detach) | 코드 binding 작성/검토할 때마다 | 교체조건 없는 하드코딩 탐지·재설계 |
 | [ontology-review-gate](./ontology-review-gate) | 구현·리팩토링·아키텍처 변경 전 | Ontology Court — PASS 없으면 구현 금지 |
+| [ontology-learning](./ontology-learning) | **실수 발생·유저 교정·에러 감지 시** | L3→L0 역추적 RCA → 보편 원칙 메모리화 → 영구 진화 |
 
 ---
 

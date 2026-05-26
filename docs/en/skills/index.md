@@ -13,6 +13,7 @@ These skills fire **without any slash command** — Claude invokes them automati
 | [pyramid-ontology](./pyramid-ontology) | **At the start of any task** | Declares L0-L3 as the governing law for all decisions |
 | [ontology-detach](./ontology-detach) | Whenever writing or reviewing code bindings | Detects hardcoding without exit conditions |
 | [ontology-review-gate](./ontology-review-gate) | Before any implementation or refactor | Ontology Court — PASS required before coding begins |
+| [ontology-learning](./ontology-learning) | **On mistake, user correction, or error detection** | L3→L0 reverse RCA → universal principle → permanent memory |
 
 ---
 
