@@ -1,19 +1,35 @@
 # 자동 강제 훅 (Hooks)
 
-ODD 플러그인은 3개의 훅을 자동으로 설치합니다. 훅은 Claude Code가 동작하는 동안 **사용자 명령 없이 매번 자동으로 발동**됩니다.
+ODD 플러그인은 **10개의 훅**을 자동으로 설치합니다. 훅은 Claude Code가 동작하는 동안 **사용자 명령 없이 매번 자동으로 발동**됩니다.
 
 ## 발동 방식 요약
 
-| 훅 | 타입 | 발동 시점 | 검사 내용 |
-|----|------|----------|---------|
-| `pyramid_ontology_gate` | PreToolUse | Edit/Write **실행 전** | L0 선언 없으면 수정 자체를 원천 차단 |
-| `pyramid_guard` | PostToolUse | Edit/Write 저장 시마다 | L 레벨 정합성 + SSOT 중복 진실 탐지 |
-| `ontology_declare_enforce` | Stop | 응답 완료 시마다 | L0 선언 + 의존성 체인 검증 (사후 확인) |
-| `git_push_enforce` | Stop | 응답 완료 시마다 | 이번 세션 수정 파일 미커밋/미푸시 차단 |
+### PreToolUse — 실행 전 차단
+
+| 훅 | 발동 조건 | 검사 내용 |
+|----|----------|---------|
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit **실행 전** | L0 선언 없으면 수정 자체를 원천 차단 |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit **실행 전** | violation_registry.json 규칙 위반 차단 |
+| `assumption_declaration_gate` | Edit/Write/NotebookEdit **실행 전** | 전략 문서에 [가정 명시] 없으면 차단 |
+| `websearch_yearguard` | WebSearch **실행 전** | 연도 없는 검색 쿼리 차단 |
+
+### PostToolUse — 실행 후 검증
+
+| 훅 | 발동 조건 | 검사 내용 |
+|----|----------|---------|
+| `pyramid_guard` | Edit/Write 저장 시마다 | L 레벨 정합성 + SSOT 중복 진실 탐지 |
+| `git_commit_push_check` | Bash 명령 실행 후 | `git commit` 명령 후 미푸시 커밋 경고 |
+| `pptx_validate_hook` | Bash 명령 실행 후 | `build_*_ppt.py` 후 슬라이드 overflow 검증 |
+
+### Stop — 세션 종료 시 강제
+
+| 훅 | 검사 내용 |
+|----|---------|
+| `ontology_declare_enforce` | L0 선언 존재 + 의존성 체인 검증 |
+| `git_push_enforce_stop` | 세션 수정 파일 미커밋/미푸시 차단 |
+| `tdd_enforce_stop` | Edit/Write 후 검증 명령 실행 흔적 없으면 차단 |
 
 **superpowers 미설치 환경에서도 모두 작동합니다.** Claude Code `settings.json` 훅으로 동작하며 superpowers 플러그인과 무관합니다.
-
----
 
 ---
 
@@ -44,6 +60,71 @@ ODD 플러그인은 3개의 훅을 자동으로 설치합니다. 훅은 Claude C
 
 ---
 
+## ontology_violation_gate
+
+**파일**: `hooks/ontology_violation_gate.py`  
+**발동**: PreToolUse — `Edit`, `Write`, `NotebookEdit` **실행 전에** 발동
+
+### 구조
+
+`violation_registry.json`을 읽어 등록된 규칙을 순서대로 적용합니다.  
+새 실수가 생기면 이 파이썬 파일을 수정하지 않고 **레지스트리에 규칙만 추가**합니다.
+
+### 지원 검사 유형
+
+- `heading_structure` — 마크다운 H2/H3 헤딩 패턴 검사 (예: 교육 설명형 헤딩 차단)
+- `section_outcome_grounding` — 섹션에 사업결과/행동 연결 없으면 차단
+- `content_pattern` — 파일 내 코드 패턴(정규식) 탐지
+
+### 경로 필터
+
+각 규칙에 `path_must_contain_any` 필터가 있어 **해당 경로의 파일에만 발동**합니다.  
+다른 프로젝트에 간섭 없음.
+
+---
+
+## assumption_declaration_gate
+
+**파일**: `hooks/assumption_declaration_gate.py`  
+**발동**: PreToolUse — `Edit`, `Write`, `NotebookEdit` **실행 전에** 발동
+
+### 적용 대상
+
+경로에 `사업부`, `전략실행`, `역공학`, `당장파이프라인`, `strategy`, `strategic` 중 하나가 포함된 `.md` 파일.
+
+### 검사 항목
+
+파일 내용에 다음 중 하나가 있는지 확인합니다:
+- `[가정 명시]` / `[가정]`
+- `가정 1:` / `가정:` / `전제:`
+- `미확인:` / `확인됨:`
+- `assumption:` / `premise:`
+
+```
+❌ 차단: 전략 문서에 가정 목록 없이 결론만 있는 경우
+✅ 통과: "[가정 명시] - 가정 1: ... → 검증 상태: 미검증" 포함 시
+```
+
+---
+
+## websearch_yearguard
+
+**파일**: `hooks/websearch_yearguard.py`  
+**발동**: PreToolUse — `WebSearch` **실행 전에** 발동
+
+### 검사 항목
+
+쿼리에 현재 연도(`datetime.now().year`)나 `최신`, `current`, `latest`, `today` 키워드 없으면 차단합니다.
+
+```
+❌ 차단: "Vercel pricing plans"
+✅ 통과: "Vercel pricing plans 2026"
+```
+
+외부 서비스·API·요금·정책 등 어떤 외부 정보든 최신 연도 기준이어야 합니다.
+
+---
+
 ## pyramid_guard
 
 **파일**: `hooks/pyramid_guard.py`  
@@ -51,32 +132,49 @@ ODD 플러그인은 3개의 훅을 자동으로 설치합니다. 훅은 Claude C
 
 ### 검사 항목
 
-**L2-A: L 레벨 선언 존재 확인**  
-파일에 `L0:`, `L1:` 선언이 있는지 확인합니다.
+**L2-A: L 레벨 선언 존재 확인** — 파일에 `L0:`, `L1:` 선언이 있는지 확인합니다.
 
-**L2-B: L0 내용 오염 탐지**  
-L0 줄에 기술 세부사항이 올라오면 차단합니다.
+**L2-B: L0 내용 오염 탐지** — L0 줄에 기술 세부사항이 올라오면 차단합니다.
 ```
 ❌ 차단: L0: timeout 10초 이내 완료       (구현 제약 → L3에 있어야 함)
-❌ 차단: L0: ffmpeg로 영상 인코딩           (도구 명시 → L3에 있어야 함)
 ✅ 통과: L0: 사용자 시간 절약 — 봇이 대신 챙긴다
 ```
 
-**L2-F: 탈존재(ontology-detach) 위반**  
-교체 조건 없는 하드코딩 탐지.
+**L2-F: 탈존재(ontology-detach) 위반** — 교체 조건 없는 하드코딩 탐지.
 
 **L2-G: 중복 진실(Duplicate Truth) — SSOT 위반**  
 동일한 개념 집합(문자열 3개 이상)이 파일 내 2개 이상 독립된 리스트에 중복 존재하면 차단합니다.
-```python
-# ❌ 차단: 아래 두 리스트가 60% 이상 겹침
-COMMANDS = ["add", "del", "edit", "done"]
-help_lines = {"add": "추가", "del": "삭제", "edit": "수정"}
 
-# ✅ 통과: help_lines를 COMMANDS에서 파생 생성
-help_lines = {cmd: descriptions[cmd] for cmd in COMMANDS}
+---
+
+## git_commit_push_check
+
+**파일**: `hooks/git_commit_push_check.py`  
+**발동**: PostToolUse — Bash 명령 실행 후 (`git commit` 포함된 경우만)
+
+### 검사 항목
+
+commit 후 upstream 대비 미푸시 커밋이 있으면 stderr로 경고합니다.  
+`git_push_enforce_stop`(Stop 훅)이 세션 종료 시에만 발동하는 갭을 이 훅이 커버합니다.
+
+```
+⚠️  git commit 완료 — Push 아직 안 됨
+  즉시 실행: git push origin main
 ```
 
-이 검사는 **도메인 무관**합니다 — 어떤 프로젝트든 동일하게 적용됩니다.
+---
+
+## pptx_validate_hook
+
+**파일**: `hooks/pptx_validate_hook.py`  
+**발동**: PostToolUse — Bash 명령 실행 후 (`build_*_ppt.py` 포함된 경우만)
+
+### 검사 항목
+
+최근 120초 내 생성된 `.pptx` 파일을 찾아 슬라이드 레이아웃 overflow를 검사합니다.  
+13.33" × 7.5" 슬라이드 경계를 벗어난 shape가 있으면 차단합니다.
+
+**의존성**: `python-pptx` 패키지 필요 (`pip install python-pptx`)
 
 ---
 
@@ -87,20 +185,13 @@ help_lines = {cmd: descriptions[cmd] for cmd in COMMANDS}
 
 ### 검사 항목
 
-**L2-A: L0 선언 존재 확인**  
-Edit/Write가 포함된 턴에서, 직전 어시스턴트 메시지에 `L0:` 선언이 없으면 차단합니다.
-목적 선언 없이 코드를 수정하는 행동을 막습니다.
+**L2-A: L0 선언 존재 확인** — Edit/Write가 포함된 턴에서 직전 어시스턴트 메시지에 `L0:` 선언이 없으면 차단합니다.
 
-**L2-B: 의존성 체인 검증**  
-열거형 개념 모음(리스트·딕셔너리·레지스트리)을 수정했는데 같은 턴에 Grep 증거가 없으면 차단합니다.
-```
-❌ 차단: COMMAND_REGISTRY에 항목 추가 → grep 없음
-✅ 통과: Grep으로 파생 표현 탐색 → COMMAND_REGISTRY 수정
-```
+**L2-B: 의존성 체인 검증** — 열거형 개념 모음 수정 시 같은 턴에 Grep 증거 없으면 차단합니다.
 
 ---
 
-## git_push_enforce
+## git_push_enforce_stop
 
 **파일**: `hooks/git_push_enforce_stop.py`  
 **발동**: Stop — Claude가 응답을 완료할 때마다
@@ -109,15 +200,33 @@ Edit/Write가 포함된 턴에서, 직전 어시스턴트 메시지에 `L0:` 선
 
 이번 세션에서 **실제로 수정한 파일**만 추적합니다 (pre-existing dirty 파일은 무시).
 
-1. transcript에서 Edit/Write된 파일 경로 추출
-2. `git status --porcelain` 결과와 교집합 확인
-3. 세션 수정 파일이 미커밋이면 차단
-4. 커밋은 됐는데 push 안 된 경우도 차단
-
 ```
 ❌ 차단: bot.py 수정 → git commit 안 함
 ❌ 차단: alarm_manager.py 수정 → commit만 하고 push 안 함
 ✅ 통과: 수정 파일 모두 commit + push 완료
+```
+
+---
+
+## tdd_enforce_stop
+
+**파일**: `hooks/tdd_enforce_stop.py`  
+**발동**: Stop — Claude가 응답을 완료할 때마다
+
+### 검사 항목
+
+transcript에서 마지막 Edit/Write 위치와 검증 명령 위치를 시간순으로 추적합니다.  
+마지막 Edit/Write **이후** 검증 흔적이 없으면 차단합니다.
+
+**검증으로 인정하는 패턴:**
+- Python: `pytest`, `python -m py_compile`, `python <file>.py`
+- JS/TS: `npx tsc --noEmit`, `npm test`, `npm run build`
+- Web: `curl http://localhost`
+- 기타: `go test`, `cargo test`, `dotnet test`, `jest`
+
+```
+❌ 차단: 코드 수정 후 검증 없이 응답 완료
+✅ 통과: python -m py_compile <file> 실행 후 응답 완료
 ```
 
 ---
@@ -130,23 +239,6 @@ Edit/Write가 포함된 턴에서, 직전 어시스턴트 메시지에 `L0:` 선
 cat ~/.claude/settings.json | grep -A5 "hooks"
 ```
 
-또는 `~/.claude/settings.json`에서 다음 항목이 있어야 합니다:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [{ "type": "command", "command": "python ~/.claude/hooks/pyramid_guard.py" }]
-      }
-    ],
-    "Stop": [
-      { "hooks": [{ "type": "command", "command": "python ~/.claude/hooks/ontology_declare_enforce.py" }] },
-      { "hooks": [{ "type": "command", "command": "python ~/.claude/hooks/git_push_enforce_stop.py" }] }
-    ]
-  }
-}
-```
+플러그인 설치 시 `hooks.json`에 정의된 훅이 자동으로 적용됩니다.
 
 [설치 방법 →](/guide/installation)
