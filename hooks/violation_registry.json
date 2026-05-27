@@ -1,0 +1,91 @@
+{
+  "_comment": "ontology-learning Phase 6에서 관리하는 중앙 위반 규칙 레지스트리. 새 실수 → 이 파일에 규칙 추가. 새 .py 파일 만들지 않음.",
+  "_architecture": "ontology_violation_gate.py가 이 파일을 읽어 PreToolUse 시 적용.",
+  "rules": [
+    {
+      "id": "design_first_when_requested",
+      "enabled": true,
+      "l0": "유저의 명시적 우선순위는 내 판단으로 변경할 수 없다. 디자인 개선 요구가 반복됐을 때 데이터/내용 수정만 하고 디자인 코드를 건드리지 않는 것은 명령 불순종이다.",
+      "l1_pattern": "static-data.ts 또는 sync 스크립트만 수정하고 *.tsx 컴포넌트 파일은 건드리지 않는 커밋 패턴",
+      "file_filter": {
+        "path_must_contain_any": ["static-data"],
+        "extensions": [".ts"]
+      },
+      "checks": [
+        {
+          "type": "content_pattern",
+          "description": "static-data.ts를 수정할 때 디자인 개선 없이 커밋 메시지에 '데이터'·'수정'·'교정'만 있는 패턴",
+          "patterns": [
+            "TODO:\\s*디자인",
+            "나중에\\s+디자인",
+            "디자인은\\s+다음"
+          ],
+          "block_message": "디자인 개선 미구현 주석 탐지.\n유저가 디자인 개선을 반복 요구했다면 이 세션에 반드시 tsx 컴포넌트 파일도 수정해야 한다.\n\n✅ 지금 당장: 관련 컴포넌트 파일 중 하나 이상 수정\n❌ 금지: 데이터만 수정 후 완료 보고"
+        }
+      ]
+    },
+    {
+      "id": "portfolio_tag_hardcode",
+      "enabled": true,
+      "l0": "포트폴리오 사이트의 시각 분류는 데이터 레이어(Supabase/타입 정의)가 드라이브해야 한다. 코드에 태그/카테고리 목록을 고정하면 데이터가 바뀔 때마다 코드 수정이 필요해 SSOT 위반이다.",
+      "l1_pattern": "portfolio_app/**/*.ts|*.tsx 파일에서 특정 기술 태그/카테고리 이름을 Set 또는 배열 리터럴로 하드코딩하는 구조",
+      "file_filter": {
+        "path_must_contain_any": ["portfolio_app"],
+        "extensions": [".ts", ".tsx"]
+      },
+      "checks": [
+        {
+          "type": "content_pattern",
+          "description": "기술 태그를 하드코딩한 Set/배열 리터럴 탐지",
+          "patterns": [
+            "new Set\\(\\s*\\[(?:\\s*[\"'][a-zA-Z][a-zA-Z0-9\\s_\\-\\.]*[\"'],?\\s*){3,}\\]\\s*\\)",
+            "const\\s+[A-Z][A-Z_]+(?:TAGS|CATEGORIES|SET|LIST)\\s*[=:]\\s*(?:new Set\\()?\\[",
+            "(?:AI|ML|LANG|LANGUAGE|TECH|STACK|CATEGORY|TAG)[_](?:TAGS|CATEGORIES|SET|LIST|NAMES)\\s*="
+          ],
+          "block_message": "태그/카테고리 하드코딩 탐지. 존재교착(ontology-detach) 위반.\n\n교체조건 없는 고정: 태그 목록이 바뀌면 코드도 수정해야 함\n\n올바른 접근:\n  ✅ Supabase category 필드 또는 타입 정의(CATEGORY_META)에서 derive\n  ❌ const AI_TAGS = [\"LangChain\", \"Claude\", ...] 직접 선언\n  ❌ new Set([\"Python\", \"TypeScript\", ...]) 하드코딩"
+        }
+      ]
+    },
+    {
+      "id": "curriculum_educational_framing",
+      "enabled": true,
+      "l0": "비개발자 사업자 대상 콘텐츠에서 기술 개념 이해는 목적이 아니라 노이즈다. 모든 섹션은 [행동]→[사업결과] 구조여야 한다.",
+      "l1_pattern": "교육 목적 섹션 헤딩 구조 (개념/원리/이해/비유 framing) + 사업 결과 연결 부재",
+      "file_filter": {
+        "path_must_contain_any": ["과외", "왕초보", "커리큘럼", "회차", "curriculum"],
+        "extensions": [".md"]
+      },
+      "checks": [
+        {
+          "type": "heading_structure",
+          "description": "H2/H3 헤딩이 교육 설명 구조인지 검사",
+          "patterns": [
+            "이란\\s*[?？]?\\s*$",
+            "(?<![가-힣])란\\s*[?？]?\\s*$",
+            "이란\\s+무엇",
+            "원리\\s*$",
+            "원리\\s+이해",
+            "이해하기\\s*$",
+            "알아보기\\s*$",
+            "개념\\s*$",
+            "비유로",
+            "동작\\s*(방식|원리)",
+            "작동\\s*(방식|원리)",
+            "구조\\s*설명",
+            "어떻게\\s+작동",
+            "어떻게\\s+동작"
+          ],
+          "block_message": "교육 설명형 섹션 헤딩 감지. 이 학생은 기술을 배우러 온 게 아니라 돈 벌러 온 사람이다.\n재작성 기준:\n  ❌ 'X란 무엇인가' → ✅ 'X로 [사업결과] 만들기'\n  ❌ 'X 원리 이해하기' → ✅ '[행동] — [결과]'\n  ❌ '비유로 이해' → ✅ 삭제하거나 실습으로 바로"
+        },
+        {
+          "type": "section_outcome_grounding",
+          "description": "섹션 내 사업결과/행동 연결 부재 검사 (heading_structure 위반과 함께 있을 때만 강화)",
+          "outcome_signals": ["사업", "매출", "고객", "수익", "돈", "결과", "가능", "생김"],
+          "action_signals": ["실습", "순서", "단계", "클릭", "입력", "설정", "등록", "지시", "완료", "확인", "배포", "연결"],
+          "exempt_headings": ["트러블슈팅", "에러", "체크리스트", "CLAUDE.md", "다음 회차", "대안"],
+          "block_message": "섹션이 사업 결과나 행동과 연결되지 않음. '이 섹션이 없으면 이 학생이 돈을 못 버는가?' 답이 NO이면 이 섹션은 필요없다."
+        }
+      ]
+    }
+  ]
+}

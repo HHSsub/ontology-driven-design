@@ -4,7 +4,7 @@ A Claude Code plugin by **Hwang Hoe Sun** (황회선) — creator of Pyramid Thi
 
 ## Plugin Skills
 
-This plugin provides 6 skills for purpose-driven AI workflows:
+This plugin provides 7 skills for purpose-driven AI workflows:
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
@@ -14,6 +14,7 @@ This plugin provides 6 skills for purpose-driven AI workflows:
 | `pyramid-label` | Before code review | Applies L0-L3 labels to all code units |
 | `pyramid-topology` | Before refactors | Full hierarchy integrity scan |
 | `ontology-review-gate` | Before any implementation | Ontology Court — PASS required before coding |
+| `ontology-learning` | After any mistake | L3→L2→L1→L0 reverse analysis + memory evolution |
 
 ## The L0-L3 Hierarchy
 
@@ -26,19 +27,56 @@ L2  Logic / Trade-off        현실과의 타협과 선택 — decisions, constr
 L3  Execution / Instance     물리적 닻 — concrete code, tools, physical acts
 ```
 
-This is not a requirements checklist. L0 is ontological — it asks not "what is the goal" but "why does this need to exist at all." L2 is not feature decomposition — it is where reality forces trade-offs and choices must be recorded.
-
 **Rule:** If you cannot state L0, stop. Ask first.
 
 ## Slash Commands
 
-All skills are also available as slash commands:
-- `/pyramid-ontology` — declare L0-L3 for this session
-- `/ontology-detach` — run de-existence check
-- `/ontology-rebuild` — rebuild topology docs
-- `/pyramid-label` — label all code units
-- `/pyramid-topology` — scan hierarchy integrity
-- `/ontology-review-gate` — run ontology court
+### ODD Core (18 commands)
+
+| Command | Purpose |
+|---------|---------|
+| `/pyramid-ontology` | Declare L0-L3 for this session |
+| `/ontology-detach` | Run de-existence check on bindings |
+| `/ontology-rebuild` | Rebuild topology docs |
+| `/pyramid-label` | Label all code units L0-L3 |
+| `/pyramid-topology` | Scan hierarchy integrity |
+| `/ontology-review-gate` | Ontology court before implementation |
+| `/ontology-learning` | Evolve ontology from mistakes |
+| `/brainstorming` | Design-first before implementation |
+| `/tdd` | Test-driven development cycle |
+| `/debug` | Systematic root-cause debugging |
+| `/plan` | Write implementation plan |
+| `/investigate` | L0-driven deep research |
+| `/careful` | Safety gate for irreversible actions |
+| `/health` | System health check |
+| `/review` | Ontology review of code/docs |
+| `/retro` | Session retrospective + memory evolution |
+| `/skills` | List all available skills and hooks |
+| `/frozen-exe` | Package Python script as standalone EXE |
+
+## Active Hooks (10 hooks, auto-trigger)
+
+### PreToolUse
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in content |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
+| `assumption_declaration_gate` | Edit/Write/NotebookEdit | Blocks strategy .md files without [가정 명시] |
+| `websearch_yearguard` | WebSearch | Blocks queries without current year |
+
+### PostToolUse
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
+| `git_commit_push_check` | Bash | Warns if unpushed commits after git commit |
+| `pptx_validate_hook` | Bash | Validates PPTX layout overflow after build_*_ppt.py |
+
+### Stop
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
+| `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
+| `tdd_enforce_stop` | Session end | Blocks if Edit/Write without verification |
 
 ## Philosophy
 
