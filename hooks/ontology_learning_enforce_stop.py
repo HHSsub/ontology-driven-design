@@ -110,9 +110,10 @@ def main() -> int:
             if _is_tool_error(msg["content"]):
                 failure_idx = i
         elif msg["role"] == "assistant":
-            # 어시스턴트 텍스트에서 예외/실패 구조 탐지
+            # 어시스턴트 텍스트에서 실제 예외 구조만 탐지 (분석 텍스트의 오탐 방지)
+            # \berror\b 는 제외 — 오류 분석 텍스트도 감지해서 ontology-learning 이후 failure_idx 갱신 문제
             text = _extract_text_from_content(msg["content"])
-            if re.search(r"Traceback|Exception|Error:|exit.?code.?[1-9]|\berror\b", text, re.IGNORECASE):
+            if re.search(r"Traceback|Exception|Error:", text, re.IGNORECASE):
                 failure_idx = i
 
     # 유저 교정 반복 구조: 동일 세션에서 유저 메시지 3회 이상 + 어시스턴트 응답 2회 이상
