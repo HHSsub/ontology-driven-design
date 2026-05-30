@@ -1,0 +1,29 @@
+# .odd/config.yaml — ODD minimal 설정
+# L0 선언 + pyramid_guard만 활성화. 나머지 훅은 off.
+# 대상: ODD를 처음 도입하는 개인 프로젝트 / 사이드 프로젝트
+version: 1
+
+hooks:
+  # ── 활성 (block) ─────────────────────────────────────
+  pyramid_ontology_gate: block     # L0 선언 없으면 Edit 차단
+  pyramid_guard: block             # 파일 저장 후 L0 위계 검증
+
+  # ── 비활성 (off) ─────────────────────────────────────
+  ontology_violation_gate: off
+  destructive_bash_gate: off
+  assumption_declaration_gate: off
+  websearch_yearguard: off
+  git_commit_push_check: off
+  pptx_validate_hook: off
+  ontology_declare_enforce: off
+  git_push_enforce_stop: off
+  tdd_enforce_stop: off
+  ontology_learning_enforce_stop: off
+  agent_pyramid_gate: off
+  ontology_graph_gate: off
+
+allowlist:
+  paths:
+    - "tests/**"
+    - ".odd/**"
+    - "templates/**"

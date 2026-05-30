@@ -805,6 +805,207 @@ def _extract_hook_filename(command: str) -> str | None:
     return m.group(1) if m else None
 
 
+# ─── 14. config_loader.py 테스트 ─────────────────────────────────────────────
+
+class TestConfigLoader(unittest.TestCase):
+    """
+    hooks/config_loader.py 단위 테스트.
+    .odd/config.yaml 유무 / severity 설정 / off 설정 → exit code 분기 검증.
+    """
+
+    def _loader_module(self):
+        """config_loader 모듈을 동적으로 import."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "config_loader",
+            str(HOOKS_DIR / "config_loader.py"),
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_config_loader_importable(self):
+        """config_loader.py가 py_compile 없이 import 가능해야 한다."""
+        mod = self._loader_module()
+        self.assertTrue(hasattr(mod, "load_project_config"))
+        self.assertTrue(hasattr(mod, "get_exit_code"))
+        self.assertTrue(hasattr(mod, "is_path_allowlisted"))
+
+    def test_default_when_no_config_file(self):
+        """
+        .odd/config.yaml 없을 때 기본값(block) 반환.
+        CLAUDE_PROJECT_DIR을 존재하지 않는 경로로 설정.
+        """
+        import importlib
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+        try:
+            os.environ["CLAUDE_PROJECT_DIR"] = "/nonexistent/project/path"
+            cfg = mod.load_project_config("tdd_enforce_stop")
+            self.assertEqual(cfg["severity"], "block")
+            self.assertEqual(cfg["allowlist_paths"], [])
+            self.assertFalse(cfg["config_found"])
+        finally:
+            os.environ.clear()
+            os.environ.update(orig_env)
+
+    def test_warn_severity_from_config(self):
+        """
+        config.yaml에 warn 설정된 훅 → severity "warn" 반환.
+        임시 .odd/config.yaml 생성 후 테스트.
+        """
+        import tempfile
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            odd_dir = Path(tmpdir) / ".odd"
+            odd_dir.mkdir()
+            config_file = odd_dir / "config.yaml"
+            config_file.write_text(
+                "version: 1\n"
+                "hooks:\n"
+                "  tdd_enforce_stop: warn\n"
+                "  ontology_learning_enforce_stop: warn\n"
+                "allowlist:\n"
+                "  paths:\n"
+                "    - \"tests/**\"\n",
+                encoding="utf-8",
+            )
+            try:
+                os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+                cfg = mod.load_project_config("tdd_enforce_stop")
+                self.assertEqual(cfg["severity"], "warn")
+                self.assertTrue(cfg["config_found"])
+                self.assertIn("tests/**", cfg["allowlist_paths"])
+            finally:
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+    def test_off_severity_returns_exit_0(self):
+        """
+        off 설정된 훅 → get_exit_code() → 0 반환 (차단하지 않음).
+        """
+        import tempfile
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            odd_dir = Path(tmpdir) / ".odd"
+            odd_dir.mkdir()
+            config_file = odd_dir / "config.yaml"
+            config_file.write_text(
+                "version: 1\n"
+                "hooks:\n"
+                "  websearch_yearguard: off\n",
+                encoding="utf-8",
+            )
+            try:
+                os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+                exit_code = mod.get_exit_code("websearch_yearguard", default_exit=2)
+                self.assertEqual(exit_code, 0)
+            finally:
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+    def test_block_severity_returns_default_exit(self):
+        """
+        block 설정된 훅 → get_exit_code() → default_exit(2) 반환.
+        """
+        import tempfile
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            odd_dir = Path(tmpdir) / ".odd"
+            odd_dir.mkdir()
+            config_file = odd_dir / "config.yaml"
+            config_file.write_text(
+                "version: 1\n"
+                "hooks:\n"
+                "  pyramid_ontology_gate: block\n",
+                encoding="utf-8",
+            )
+            try:
+                os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+                exit_code = mod.get_exit_code("pyramid_ontology_gate", default_exit=2)
+                self.assertEqual(exit_code, 2)
+            finally:
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+    def test_unknown_hook_defaults_to_block(self):
+        """
+        config.yaml에 없는 훅명 → 기본값(block) 반환.
+        """
+        import tempfile
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            odd_dir = Path(tmpdir) / ".odd"
+            odd_dir.mkdir()
+            config_file = odd_dir / "config.yaml"
+            config_file.write_text(
+                "version: 1\n"
+                "hooks:\n"
+                "  some_other_hook: warn\n",
+                encoding="utf-8",
+            )
+            try:
+                os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+                cfg = mod.load_project_config("tdd_enforce_stop")  # 등록 안 된 훅
+                self.assertEqual(cfg["severity"], "block")
+            finally:
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+    def test_allowlist_path_matching(self):
+        """
+        allowlist에 등록된 경로 패턴 → is_path_allowlisted() → True.
+        등록되지 않은 경로 → False.
+        """
+        import tempfile
+        mod = self._loader_module()
+        orig_env = os.environ.copy()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            odd_dir = Path(tmpdir) / ".odd"
+            odd_dir.mkdir()
+            config_file = odd_dir / "config.yaml"
+            config_file.write_text(
+                "version: 1\n"
+                "hooks:\n"
+                "  tdd_enforce_stop: warn\n"
+                "allowlist:\n"
+                "  paths:\n"
+                "    - \"tests/**\"\n"
+                "    - \".odd/**\"\n",
+                encoding="utf-8",
+            )
+            try:
+                os.environ["CLAUDE_PROJECT_DIR"] = tmpdir
+                # 허용 경로
+                self.assertTrue(mod.is_path_allowlisted(
+                    f"{tmpdir}/tests/test_foo.py", "tdd_enforce_stop"
+                ))
+                # 허용되지 않는 경로
+                self.assertFalse(mod.is_path_allowlisted(
+                    f"{tmpdir}/src/main.py", "tdd_enforce_stop"
+                ))
+            finally:
+                os.environ.clear()
+                os.environ.update(orig_env)
+
+    def test_py_compile_passes(self):
+        """config_loader.py 자체가 문법 오류 없이 컴파일되어야 한다."""
+        import py_compile
+        try:
+            py_compile.compile(str(HOOKS_DIR / "config_loader.py"), doraise=True)
+        except py_compile.PyCompileError as e:
+            self.fail(f"config_loader.py 컴파일 실패: {e}")
+
+
 # ─── 진입점 ───────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":

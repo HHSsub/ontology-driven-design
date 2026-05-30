@@ -1,0 +1,25 @@
+# .odd/config.yaml — ODD strict 설정
+# 모든 훅 block. ODD 원칙을 완전히 강제하는 팀/프로덕션 환경.
+# 대상: ODD에 익숙한 팀, 품질 게이트가 필수인 프로젝트
+version: 1
+
+hooks:
+  # ── 모두 block ────────────────────────────────────────
+  pyramid_ontology_gate: block
+  ontology_violation_gate: block
+  destructive_bash_gate: block
+  assumption_declaration_gate: block
+  websearch_yearguard: block
+  pyramid_guard: block
+  git_commit_push_check: block
+  pptx_validate_hook: block
+  ontology_declare_enforce: block
+  git_push_enforce_stop: block
+  tdd_enforce_stop: block
+  ontology_learning_enforce_stop: block
+  agent_pyramid_gate: block
+  ontology_graph_gate: block
+
+allowlist:
+  paths:
+    - ".odd/**"

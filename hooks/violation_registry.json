@@ -1,5 +1,6 @@
 {
   "_comment": "씨앗(L0)→가지(L1)→열매(L3) 3계층 진화 구조. 전역 파일 — 프로젝트 고유 케이스·경로·키워드 금지.",
+  "_scope": "글로벌 규칙만. 개인/프로젝트 특화 케이스는 violation_registry.personal.json에 분리 보관.",
   "_architecture": "ontology_violation_gate.py + ontology_graph_gate.py 가 이 파일을 읽어 PreToolUse 시 적용.",
 
   "_self_limit_protocol": {
@@ -78,13 +79,6 @@
       "exit_condition": "모든 배포 관련 완료 선언 전 외부 환경 직접 관찰 + 데이터 SSOT 자가 검증이 자동 반사 행동으로 내재화될 때"
     },
     {
-      "id": "paid_api_parameter_validation",
-      "seed_ref": "l0_grounding",
-      "domain": "유료 외부 API 호출 전 파라미터 검증",
-      "differentiation": "l0_grounding 씨앗의 유료 API 도메인 분화. 비용 발생 API 호출 전 이전 성공 케이스와 파라미터를 1:1 비교하는 체크포인트 강제. '이전에 작동했으니 작동하겠지' 가정 = l0_grounding 위반. 핵심 심화(2026-05-29): '파라미터 형식(base64 vs URL, string vs int)'은 API별로 독립 검증 대상이다. Mystic/FAL/Kling v2에서 base64가 됐더라도 Kling v3에서 base64가 맞다고 가정하면 안 된다. 문서 파라미터 타입이 'string(URI)'이면 HTTPS URL이지 base64가 아니다. 실패 시 필드명과 값 형식을 동시에 바꾸는 것을 금지 — 단일 변수 격리 원칙. 기계 검증 불가 → 판단 직전 자가 발동 필수: '이 API에서 이 형식이 맞는지 문서와 외부 성공 사례에서 확인했는가?'",
-      "exit_condition": "유료 API 호출 전 파라미터 형식(base64 vs URL) 포함 전체 파라미터 diff 검증이 자동 반사 행동으로 내재화되어 무검증 호출이 0건이 될 때"
-    },
-    {
       "id": "solution_space_exploration",
       "seed_ref": "l0_grounding",
       "domain": "기술적 해결책 제안 전 생태계 탐색 의무",
@@ -113,25 +107,8 @@
       "exit_condition": "설계 착수 시 L0 WHY-역추출이 자동 반사 행동으로 내재화되어 사례-L0 혼동이 0건이 될 때"
     },
     {
-      "id": "ux_completion_requires_user_test",
-      "seed_ref": "l0_grounding",
-      "domain": "모바일/UI 산출물 완성 기준 — 기술 동작 ≠ UX 완성",
-      "differentiation": "l0_grounding 씨앗의 UI/UX 도메인 분화. 빌드 성공·컴파일 통과·API 200은 기술 최소 조건일 뿐, UX 완성이 아니다. 교육앱·모바일앱의 L0 = 사용자가 목적을 달성할 수 있는가. 완성 선언 전 의무 자가 질문: '실제 타겟 디바이스(모바일 360px)에서 렌더링 확인했는가? SOTA 벤치마크(Duolingo, 해당 도메인 Best App)와 비교했는가? 전체 사용자 여정(진입→핵심 동작→완료)을 직접 테스트했는가?' — 세 질문 모두 YES일 때만 완성.",
-      "exit_condition": "모바일 UI 산출물 완성 선언 전 실기기/뷰포트 검증이 자동 반사 행동으로 내재화될 때"
-    },
-    {
-      "id": "research_data_code_integrity",
-      "seed_ref": "l0_grounding",
-      "domain": "연구 DB를 건드리는 코드 제공 전 실패 경로 검증 의무",
-      "differentiation": "l0_grounding 씨앗의 연구 데이터 도메인 분화. 코드가 '실행 가능함'은 완성이 아니다. 연구 DB에 write하는 코드는 실패 경로에서도 데이터를 오염시키지 않는 것이 확인될 때만 완성이다. 핵심 원칙 3가지: 1) GPU/모델 추론 코드는 드리기 전 truncation/max_length/device 파라미터를 직접 확인. 2) 에러 핸들러는 연구 DB에 garbage값(imp_score=0.0, 'error')을 저장하지 않음 — 오염보다 skip이 낫다. 3) DB write SQL 제공 전 현재 DB 연결 상태(locked 여부)를 확인. 발동 조건: 연구 DB에 write하는 코드를 제공하기 직전 자가 질문 — '이 코드가 실패하면 DB에 무슨 일이 일어나는가? 오염이 발생하는가?'",
-      "exit_condition": "연구 DB write 코드 제공 전 실패 경로 자가 검증이 자동 반사 행동으로 내재화되어 오염 케이스가 0건이 될 때"
-    },
-    {
-      "id": "user_specified_data_integrity",
-      "seed_ref": "l0_grounding",
-      "domain": "유저 지정 데이터/영상/인물의 의무 사용",
-      "differentiation": "l0_grounding 씨앗의 데이터 소스 도메인 분화. 유저가 특정 데이터(영상, 이미지, 인물, job ID)를 명시했을 때, 테스트·예시 클립·디버깅·검증 어떤 작업에서도 그 데이터를 사용해야 한다. '테스트는 기능만 확인하면 되니까 다른 데이터 써도 됨' = l0_grounding 위반. 인물 영상 작업에서 임의 이미지를 시드로 쓰는 것 = 유저가 지정한 기준을 내 편의로 대체하는 것. 기계 검증 불가 → 유료 API 호출 전, 예시 클립 생성 전 자가 발동 필수: '유저가 지정한 데이터가 있는가? 그 데이터를 지금 쓰고 있는가?'",
-      "exit_condition": "유저 지정 데이터를 다른 데이터로 대체하는 행동이 추론 단계에서 자가 차단되어 0건이 될 때"
+      "id": "_personal_cases_moved",
+      "note": "ux_completion_requires_user_test, research_data_code_integrity, user_specified_data_integrity, paid_api_parameter_validation → violation_registry.personal.json 으로 이동됨 (개인 프로젝트 특화)"
     }
   ],
 
