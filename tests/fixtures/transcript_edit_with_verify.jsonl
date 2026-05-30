@@ -1,0 +1,5 @@
+{"message":{"role":"user","content":[{"type":"text","text":"코드 수정 후 테스트 실행해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"L0: 코드 동작 검증\n수정 후 테스트를 실행합니다."},{"type":"tool_use","id":"tool_1","name":"Edit","input":{"file_path":"/tmp/sample.py","old_string":"pass","new_string":"return 1"}}]}}
+{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool_1","content":[{"type":"text","text":"OK"}]}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"이제 검증합니다."},{"type":"tool_use","id":"tool_2","name":"Bash","input":{"command":"python -m py_compile /tmp/sample.py"}}]}}
+{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool_2","content":[{"type":"text","text":""}]}]}}

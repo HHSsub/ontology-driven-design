@@ -1,0 +1,4 @@
+{"message":{"role":"user","content":[{"type":"text","text":"파일 수정해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"네, 수정하겠습니다. 먼저 파일을 읽어보겠습니다."}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"계속해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"파일 수정을 진행하겠습니다."}]}}

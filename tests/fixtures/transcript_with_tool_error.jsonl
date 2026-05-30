@@ -1,0 +1,4 @@
+{"message":{"role":"user","content":[{"type":"text","text":"실행해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"L0: 테스트 목적\n실행하겠습니다."},{"type":"tool_use","id":"tool_1","name":"Bash","input":{"command":"python nonexistent.py"}}]}}
+{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool_1","is_error":true,"content":[{"type":"text","text":"FileNotFoundError: nonexistent.py"}]}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"오류가 발생했습니다. 파일이 없네요."}]}}

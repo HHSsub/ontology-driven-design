@@ -1,0 +1,27 @@
+name: ODD Hook Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies (optional — pptx_validate_hook)
+        run: |
+          pip install -r requirements.txt || true
+
+      - name: Run hook tests
+        run: python tests/test_hooks.py
+
+      - name: Hook registry consistency check
+        run: node verify.js

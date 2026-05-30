@@ -1,0 +1,4 @@
+{"message":{"role":"user","content":[{"type":"text","text":"도와줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"L0: ODD 훅 테스트 인프라 구축 — 훅이 예측 가능하게 동작함을 자동으로 검증한다\nL1: 각 훅의 PASS/BLOCK 시나리오를 커버하는 테스트 작성\nL2: Python unittest + subprocess 기반 테스트 실행\n네, 도와드리겠습니다."}]}}
+{"message":{"role":"user","content":[{"type":"text","text":"계속해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"작업을 계속하겠습니다."}]}}
