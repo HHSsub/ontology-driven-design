@@ -4,10 +4,10 @@ title: ODD — Ontology Driven Design
 hero:
   name: "ODD"
   text: "Ontology Driven Design"
-  tagline: "Purpose-less code is garbage. Code that works but has no purpose is failure."
+  tagline: "A purpose-governed engineering layer for AI coding agents. Prevents vibe-code drift by enforcing conceptual hierarchy before code changes happen."
   actions:
     - theme: brand
-      text: Get Started
+      text: 5-min Quickstart
       link: /en/guide/getting-started
     - theme: alt
       text: GitHub
@@ -18,43 +18,55 @@ hero:
 
 features:
   - icon: 🎯
-    title: Purpose Enforcement (pyramid-ontology)
-    details: No task starts without declaring L0 (business purpose). Applies to code, reports, emails — every output.
+    title: Purpose Enforcement
+    details: "pyramid-ontology: No edit starts without declaring L0 (the deepest reason this must exist). Applies to code, reports, emails — any output."
   - icon: 🔓
-    title: De-Existence Principle (ontology-detach)
-    details: Every binding must have an exit condition. Hardcoding is a lie — it will break as environments change.
-  - icon: 🗺️
-    title: Topology Rebuild (ontology-rebuild)
-    details: Auto-generates L0-L3 topology maps for the entire project. Per-folder ONTOLOGY.md + root _WIKI.md.
-  - icon: 🏷️
-    title: Hierarchy Labeling (pyramid-label)
-    details: Applies L0-L3 labels to all code units in any language — Python, TypeScript, Go, YAML, Markdown.
-  - icon: 📐
-    title: Integrity Check (pyramid-topology)
-    details: Detects unlabeled units, L0 pollution, orphan files, and circular dependencies. Required before refactors.
+    title: De-Existence Principle
+    details: "ontology-detach: Every binding must state its exit condition. Hardcoding is a lie — it will break as environments change."
+  - icon: 🧠
+    title: Permanent Learning
+    details: "ontology-learning: Every mistake traces back L3→L2→L1→L0. Findings become rules. ODD evolves from its own errors — and yours."
   - icon: ⚖️
-    title: Review Gate (ontology-review-gate)
-    details: Ontology Court review before any implementation. PASS required before writing code.
+    title: Implementation Gate
+    details: "ontology-review-gate: Ontology Court before any implementation. PASS required before writing code. Prevents premature L3 execution."
+  - icon: 📐
+    title: Hierarchy Integrity
+    details: "pyramid-topology: Detects unlabeled units, L0 pollution, orphan files, circular dependencies. Required before refactors."
+  - icon: 🗺️
+    title: Topology Maps
+    details: "ontology-rebuild: Auto-generates L0-L3 topology docs for the entire project. Every folder gets an ONTOLOGY.md."
+  - icon: 🏷️
+    title: Hierarchy Labeling
+    details: "pyramid-label: Applies L0-L3 labels to all code units in any language or file type."
+  - icon: 🔒
+    title: Auto-Enforced Hooks
+    details: "13 hooks enforce ODD governance automatically. Block purposeless edits, detect SSOT violations, enforce TDD — before damage is done."
+---
+
+## The L0-L3 Hierarchy
+
+ODD enforces a 4-layer purpose hierarchy across every output.
+
+| Level | Layer | Question | Cannot Be |
+|-------|-------|---------|-----------|
+| **L0** | Purpose / Ontology | *Why must this exist at all?* | Stated in terms of tools or platforms |
+| **L1** | Architecture / Structure | *What is the invariant design?* | Changed without changing L0 |
+| **L2** | Decision / Trade-off | *What did we choose and what did we give up?* | Undocumented |
+| **L3** | Execution / Instance | *What is the concrete act?* | Orphaned from L0 |
+
+**Core rule:** If you cannot state L0, stop. The action has no purpose.
+
+> ODD is self-applicable: the same L0-L3 discipline that governs your code governed the development of ODD itself. [Case Study →](/en/guide/getting-started)
+
 ---
 
 ## Installation
 
 ```bash
 claude plugin add HHSsub/ontology-driven-design
-# or short alias
-claude plugin add HHSsub/odd
 ```
 
-## The L0-L3 Hierarchy
-
-```
-L0  Business purpose    WHY — why does this exist
-L1  System goal         HOW — how does it achieve L0
-L2  Feature unit        WHAT — what gets built
-L3  Implementation      WITH WHAT — which tools
-```
-
-**Rule:** If you cannot state L0, stop and ask first.
+> Note: Verify this works on your Claude Code version. [Manual install →](/en/guide/installation)
 
 ---
 
