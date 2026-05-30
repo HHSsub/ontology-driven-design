@@ -92,13 +92,13 @@ Phase 4에서 추출한 L0/L1을 "강제 가능한 구조"로 변환한다:
 다음 순서로 확인:
 
 ```
-1. C:/Users/User/.claude/hooks/violation_registry.json 읽기
+1. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/violation_registry.json 읽기
    → 동일 L0/L1 구조를 이미 커버하는 rule이 있는가?
 
-2. C:/Users/User/.claude/hooks/*.py 목록 확인
+2. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/*.py 목록 확인
    → 동일 목적의 훅이 이미 있는가?
 
-3. C:/Users/User/.claude/settings.json hooks 섹션 확인
+3. ${CLAUDE_HOOKS_DIR:-~/.claude}/settings.json hooks 섹션 확인
    → 등록된 훅 중 이 상황을 커버해야 했는데 안 한 것이 있는가?
 ```
 
@@ -148,11 +148,11 @@ violation_registry.json의 해당 rule 찾기
 
 ```bash
 # 차단 케이스 (위반 예시) — exit 1이 나와야 함
-echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## API란 무엇인가\n..."}}' | python C:/Users/User/.claude/hooks/ontology_violation_gate.py
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## API란 무엇인가\n..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
 echo "exit: $?"
 
 # 통과 케이스 (올바른 예시) — exit 0이 나와야 함
-echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## 카카오 지도 — 고객이 찾아오게 만들기\n실습 순서..."}}' | python C:/Users/User/.claude/hooks/ontology_violation_gate.py
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## 카카오 지도 — 고객이 찾아오게 만들기\n실습 순서..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
 echo "exit: $?"
 ```
 
@@ -161,7 +161,7 @@ echo "exit: $?"
 ## 중앙 훅 아키텍처
 
 ```
-C:/Users/User/.claude/hooks/
+${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/
   ontology_violation_gate.py   ← 중앙 게이트 (이 파일은 로직 엔진)
   violation_registry.json      ← 규칙 데이터 (ontology-learning이 업데이트)
   [기존 특수 훅들]              ← 건드리지 않음 (다른 목적)

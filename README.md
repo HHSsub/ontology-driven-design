@@ -1,82 +1,131 @@
 # ODD — Ontology Driven Design
 
-> **Purpose-less code is garbage. Code that works but has no purpose is failure.**
+> **A purpose-governed engineering layer for AI coding agents.**  
+> ODD prevents vibe-code drift by enforcing conceptual hierarchy, dependency traceability, and source-of-truth discipline before code changes happen.
 
-A Claude Code plugin that enforces purpose-driven AI workflows through the **Pyramid Thinking** (피라미드사고법) framework — created by [Hwang Hoe Sun](https://knowgram.vercel.app).
+A Claude Code plugin built on **Pyramid Thinking** (피라미드사고법) — created by [Hwang Hoe Sun](https://knowgram.vercel.app).
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-Plugin-blue)](https://claude.ai/code)
 [![Docs](https://img.shields.io/badge/Docs-HHSsub.github.io-orange)](https://HHSsub.github.io/ontology-driven-design)
 
 ---
 
-## 설치 (Installation)
+## What ODD Is (and Is Not)
 
-```bash
-# Full name
-claude plugin add HHSsub/ontology-driven-design
+**ODD IS:** A governance layer that forces AI coding agents to connect every action to a stated purpose. It operates through hooks (automatic enforcement) and skills (manual invocation).
 
-# Short alias
-claude plugin add HHSsub/odd
-```
+**ODD IS NOT:** A formal ontology tool (no OWL/RDF/SPARQL). It does not build knowledge graphs or semantic web artifacts. The word "ontology" refers to *purpose hierarchy* — the question "why does this exist?" — not to formal ontology engineering.
+
+If you want formal ontology tooling, see [Protégé](https://protege.stanford.edu/) or [LinkML](https://linkml.io/). If you want AI coding agents that don't lose track of *why they're doing what they're doing*, ODD is for you.
 
 ---
 
 ## The L0-L3 Framework
 
-ODD enforces a 4-layer ontology hierarchy across every output — code, reports, emails, architecture decisions.
+Every action, file, and decision must connect to a purpose.
 
-| Level | Layer | Essence |
+| Level | Layer | Question |
 |-------|-------|---------|
-| **L0** | Ontology / Purpose | 궁극적 융합과 내재화 — the deepest reason this needs to exist. Not "what is the goal" but "why does this exist at all." |
-| **L1** | Abstract / Structure | 질서의 아키텍처 — the invariant design that bridges L0 to reality. The gravity field that keeps all lower actions on orbit. |
-| **L2** | Logic / Trade-off | 현실과의 타협과 선택 — where structure meets reality and forces choices. Every decision here carries opportunity cost. |
-| **L3** | Execution / Instance | 물리적 닻 — the concrete act. Code, tools, physical steps. Without a strong L3, L0 cannot move a single step forward. |
+| **L0** | Purpose / Ontology | *Why does this exist at all?* — the existence-level reason |
+| **L1** | Structure / Architecture | *What is the invariant design?* — bridges L0 to reality |
+| **L2** | Logic / Trade-off | *What did we choose and what did we sacrifice?* — decision record |
+| **L3** | Execution / Instance | *What is the concrete act?* — code, config, physical steps |
 
-**Core rule:** Every action must trace back to L0. If you cannot state L0, stop.
-
-> This is not a requirements traceability framework. L0 is ontological — existence-level. L2 is not feature decomposition — it is trade-off record.
+**Core rule:** If you cannot state L0, stop. Action without L0 is purposeless.
 
 ---
 
-## Skills (6)
+## Installation
 
-| Skill | When to use |
-|-------|-------------|
-| `/pyramid-ontology` | Start of any task — declares L0-L3 as session law |
-| `/ontology-detach` | Writing/reviewing bindings — detects existence-clinging |
-| `/ontology-rebuild` | After major changes — rebuilds ONTOLOGY.md topology |
-| `/pyramid-label` | Before code review — labels all code units L0-L3 |
-| `/pyramid-topology` | Before refactors — full hierarchy integrity scan |
-| `/ontology-review-gate` | Before implementation — Ontology Court (PASS required) |
+> **Note:** The `claude plugin add` installation path is being verified against current Claude Code CLI versions. If the command below does not work, use the manual installation path in [docs/guide/installation.md](docs/guide/installation.md).
+
+```bash
+# Plugin install (verify this works on your Claude Code version)
+claude plugin add HHSsub/ontology-driven-design
+```
+
+**Manual install (always works):**
+```bash
+git clone https://github.com/HHSsub/ontology-driven-design.git
+# Follow docs/guide/installation.md for full setup including hooks
+```
+
+---
+
+## Skills (8)
+
+| Skill | Trigger | Purpose |
+|-------|---------|---------|
+| `/pyramid-ontology` | Any task start | Declares L0-L3 hierarchy as governing law |
+| `/ontology-detach` | Writing/reviewing bindings | Detects existence-clinging, enforces exit conditions |
+| `/ontology-rebuild` | After major changes | Rebuilds ONTOLOGY.md topology for all folders |
+| `/pyramid-label` | Before code review | Applies L0-L3 labels to all code units |
+| `/pyramid-topology` | Before refactors | Full hierarchy integrity scan |
+| `/ontology-review-gate` | Before implementation | Ontology Court — PASS required before coding |
+| `/ontology-learning` | After any mistake | L3→L2→L1→L0 reverse analysis + memory evolution |
+| `/odd-onboarding` | New project setup | Interactive project ontology initialization |
+
+> **Works best with [superpowers](https://github.com/greptile/superpowers) plugin** for TDD, debugging, and planning skills. ODD is self-contained but the full governance stack integrates with superpowers.
+
+---
+
+## Active Hooks (13 registered)
+
+Hooks enforce ODD governance automatically — no manual invocation needed.
+
+### PreToolUse
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `websearch_yearguard` | WebSearch | Blocks queries without current year |
+| `destructive_bash_gate` | Bash | Blocks dangerous commands (force-delete, DROP TABLE, etc.) |
+| `agent_pyramid_gate` | Agent | Requires L0 declaration + role spec for all Agent calls |
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit | Enforces violation_registry.json rules |
+
+### PostToolUse
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `pptx_validate_hook` | Bash | Validates PPTX layout after build_*_ppt.py |
+| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
+
+### Stop
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `tdd_enforce_stop` | Session end | Blocks if code edited without verification (docs exempt) |
+| `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
+| `assumption_declaration_gate` | Session end | Blocks if strategy docs missing [가정 명시] |
+| `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
+| `ontology_learning_enforce_stop` | Session end | Blocks if tool error occurred without /ontology-learning |
 
 ---
 
 ## Quick Start
 
 ```
-# 1. Start any session with purpose declaration
+# 1. Declare purpose before any task
 /pyramid-ontology
 
-# 2. Before coding — check for existence-clinging
+# 2. Check bindings before writing code
 /ontology-detach
 
-# 3. Before a major refactor — verify the whole hierarchy
-/pyramid-topology
-
-# 4. Gate before implementation
+# 3. Gate before implementation
 /ontology-review-gate
+
+# 4. Learn from every mistake
+/ontology-learning
 ```
 
 ---
 
 ## Why ODD?
 
-AI coding agents are powerful but directionless by default. They execute L3 (implementation) brilliantly while losing track of L0 (purpose). ODD solves this by:
+AI coding agents execute L3 (implementation) brilliantly while losing track of L0 (purpose). ODD solves this by:
 
-1. **Forcing purpose declaration** before every action
-2. **Detecting existence-clinging** — hardcoded assumptions that become lies as environments change
-3. **Auditing hierarchy integrity** — every function traces back to a business goal
-4. **Gating implementation** — nothing gets built without ontology review
+1. **Forcing purpose declaration** before every action — no L0, no edit
+2. **Detecting existence-clinging** — assumptions that become lies as environments change
+3. **Gating implementation** — nothing gets built without hierarchy review
+4. **Enforcing learning** — every mistake traces back to the principle that failed
 
 ---
 
@@ -86,9 +135,8 @@ Full documentation: **[HHSsub.github.io/ontology-driven-design](https://HHSsub.g
 
 ---
 
-## Author
+## License
 
-**황회선 (Hwang Hoe Sun)**  
-Creator of Pyramid Thinking (피라미드사고법)  
-[knowgram.vercel.app](https://knowgram.vercel.app)
+MIT © 2025 [Hwang Hoe Sun (황회선)](https://knowgram.vercel.app)
 
+Creator of Pyramid Thinking (피라미드사고법)

@@ -177,7 +177,7 @@ def main():
     if found_violations:
         for rule_id, msg in found_violations:
             print(msg)
-        sys.exit(1)
+        sys.exit(2)  # exit(2) = Claude Code block signal (exit(1) treated as error, not block)
 
     sys.exit(0)
 

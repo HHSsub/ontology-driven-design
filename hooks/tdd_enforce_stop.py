@@ -72,6 +72,9 @@ VERIFY_RE = re.compile("|".join(VERIFICATION_PATTERNS), re.IGNORECASE)
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
+# 문서/설정 파일은 TDD 검증 대상 아님 — 테스트 명령으로 "맞게 썼는지" 검증 불가
+DOC_EXTENSIONS = {".md", ".txt", ".rst", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg"}
+
 
 def _extract_cmd(tool_name: str, inp: dict) -> str:
     if tool_name == "Bash":
@@ -118,7 +121,9 @@ def main() -> int:
                 continue
             name = block.get("name", "")
             if name in EDIT_TOOLS:
-                last_edit_idx = idx
+                file_path = block.get("input", {}).get("file_path", "")
+                if Path(file_path).suffix.lower() not in DOC_EXTENSIONS:
+                    last_edit_idx = idx
             elif name in SHELL_TOOLS:
                 cmd = _extract_cmd(name, block.get("input", {}))
                 if cmd and VERIFY_RE.search(cmd):

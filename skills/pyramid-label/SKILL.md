@@ -79,7 +79,8 @@ L2: 현재 시스템의 병목 지점 식별
 
 ### STEP 1 — 대상 파일 목록 수집
 
-포함: `.py .ts .js .jsx .tsx .go .rb .java .yaml .yml .md .sh`
+대상: 바이너리가 아닌 모든 텍스트 파일 (확장자 하드코딩 금지)
+바이너리 판별: 파일 첫 8바이트에 `\x00`이 있으면 바이너리 → 스킵
 제외: `__pycache__/ dist/ build/ node_modules/ *.lock *.min.js`
 
 ### STEP 2 — 각 파일 분석 및 라벨 적용

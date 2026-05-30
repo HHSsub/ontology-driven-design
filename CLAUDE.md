@@ -54,32 +54,32 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `/skills` | List all available skills and hooks |
 | `/frozen-exe` | Package Python script as standalone EXE |
 
-## Active Hooks (14 hooks, auto-trigger)
+## Active Hooks (13 hooks, auto-trigger)
+<!-- Source of truth: hooks/hooks.json — update this table when hooks.json changes -->
 
 ### PreToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
 | `websearch_yearguard` | WebSearch | Blocks queries without current year |
-| `destructive_bash_gate` | Bash | Blocks destructive bash commands (rm -rf, DROP TABLE, etc.) |
-| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in content |
-| `ontology_graph_gate` | Edit/Write/NotebookEdit | Checks ontology graph consistency |
+| `destructive_bash_gate` | Bash | Blocks dangerous bash commands |
+| `agent_pyramid_gate` | Agent | Requires L0 + role spec for Agent calls |
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
 | `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
 
 ### PostToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
 | `pptx_validate_hook` | Bash | Validates PPTX layout overflow after build_*_ppt.py |
-| `git_commit_push_check` | Bash | Warns if unpushed commits after git commit |
 | `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
 
 ### Stop
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `tdd_enforce_stop` | Session end | Blocks if Edit/Write without verification |
+| `tdd_enforce_stop` | Session end | Blocks if code edited without verification (docs exempt) |
 | `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
 | `assumption_declaration_gate` | Session end | Blocks if strategy docs missing [가정 명시] |
 | `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
-| `ontology_learning_enforce_stop` | Session end | Enforces ontology-learning after detected mistakes |
+| `ontology_learning_enforce_stop` | Session end | Blocks if tool error occurred without /ontology-learning |
 
 ## Philosophy
 

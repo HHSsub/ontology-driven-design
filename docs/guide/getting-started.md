@@ -2,13 +2,16 @@
 
 ## 설치
 
-```bash
-# 풀네임
-claude plugin add HHSsub/ontology-driven-design
+> **참고**: `claude plugin add` 명령어는 Claude Code 버전에 따라 동작이 다를 수 있습니다. 정상 동작하지 않으면 수동 설치 가이드를 사용하세요.
 
-# 단축명 (동일)
-claude plugin add HHSsub/odd
+```bash
+# 플러그인 설치 시도
+claude plugin add HHSsub/ontology-driven-design
 ```
+
+**수동 설치 (항상 작동):** [설치 가이드](installation.md) 참고
+
+---
 
 ## 기본 흐름
 
@@ -24,16 +27,18 @@ L2: [지금 구현할 기능 단위]
 
 ### 2. 자동 강제 훅 (설치 즉시 발동)
 
-플러그인 설치 후 다음 훅이 **자동으로** 매번 강제 발동됩니다:
+플러그인 설치 후 다음 훅이 **자동으로** 발동됩니다:
 
 | 훅 | 발동 시점 | 검사 내용 |
 |----|-----------|-----------|
-| `pyramid_guard` | Edit/Write 저장 시 | L0-L3 위계 정합성, SSOT 중복진실 탐지 |
-| `ontology_declare_enforce` | 응답 완료 시 | L0 선언 존재 여부, 의존성 체인 검증 |
-| `git_push_enforce` | 응답 완료 시 | 코드 변경 후 미커밋/미푸시 차단 |
-
-**SSOT 강제**: 동일 개념 집합이 N개 독립 위치에 중복되면 자동 차단됩니다.
-**의존성 체인**: 열거형 개념 모음 수정 시 grep 증거 없으면 차단됩니다.
+| `pyramid_ontology_gate` | Edit/Write 전 | 세션에 L0 선언이 없으면 수정 차단 |
+| `ontology_violation_gate` | Edit/Write 전 | violation_registry.json 규칙 위반 차단 |
+| `destructive_bash_gate` | Bash 실행 전 | 위험한 명령어 차단 |
+| `agent_pyramid_gate` | Agent 호출 전 | L0 미션 + 역할 선언 없는 서브에이전트 차단 |
+| `pyramid_guard` | Edit/Write 후 | L0-L3 위계 정합성, SSOT 중복진실 탐지 |
+| `ontology_declare_enforce` | 응답 완료 시 | L0 선언 존재 여부 검증 |
+| `git_push_enforce_stop` | 응답 완료 시 | 미커밋/미푸시 코드 변경 차단 |
+| `tdd_enforce_stop` | 응답 완료 시 | 코드 파일 수정 후 검증 미실행 차단 |
 
 ### 3. 코드 작성 중 — 탈존재 점검
 
@@ -45,7 +50,7 @@ L2: [지금 구현할 기능 단위]
 
 자가질문: **"이 binding의 교체조건은 무엇인가?"** — 답이 "없음"이면 위반.
 
-### 3. 리팩토링 전 — 위계 점검
+### 4. 리팩토링 전 — 위계 점검
 
 ```bash
 /pyramid-topology
@@ -53,7 +58,7 @@ L2: [지금 구현할 기능 단위]
 
 미라벨 단위, L0 오염, 고아 파일을 탐지합니다.
 
-### 4. 구현 전 — 심판 게이트
+### 5. 구현 전 — 심판 게이트
 
 ```bash
 /ontology-review-gate
@@ -61,13 +66,23 @@ L2: [지금 구현할 기능 단위]
 
 PASS를 받아야만 코드를 짤 수 있습니다.
 
-### 5. 완료 후 — 위상도 갱신
+### 6. 실수 후 — 온톨로지 학습
+
+```bash
+/ontology-learning
+```
+
+실수를 L3→L2→L1→L0 역추적하여 원칙을 영구 진화시킵니다.
+
+### 7. 완료 후 — 위상도 갱신
 
 ```bash
 /ontology-rebuild
 ```
 
 모든 폴더에 ONTOLOGY.md를 갱신합니다.
+
+---
 
 ## 다음 단계
 

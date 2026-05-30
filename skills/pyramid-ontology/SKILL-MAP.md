@@ -32,14 +32,18 @@
 
 이 스킬들이 없으면 L0 달성 경로가 깨진다.
 
-| 스킬 | 목적 | 언제 |
-|------|------|------|
-| `superpowers:test-driven-development` | 검증 없는 구현 금지 — 테스트 먼저 | 기능 구현/버그 수정 시 |
-| `superpowers:verification-before-completion` | 완료 선언 전 실제 동작 검증 강제 | 완료 보고 전 항상 |
-| `superpowers:systematic-debugging` | 증상 픽스가 아닌 근본 원인 추적 강제 | 버그/에러 발생 시 |
-| `superpowers:brainstorming` | 구현 전 설계 확인 강제 | 신기능/변경 전 |
-| `superpowers:writing-plans` | 구현 계획 구체화 | 설계 승인 후 |
-| `superpowers:executing-plans` | 계획 단계별 실행 | 계획 작성 후 |
+> **외부 의존성 고지:** 아래 `superpowers:*` 스킬들은 [superpowers 플러그인](https://github.com/greptile/superpowers)을 별도 설치해야 사용 가능합니다.
+> ODD만 단독 설치한 경우, 이 스킬들은 없어도 핵심 훅 강제(pyramid_ontology_gate, pyramid_guard 등)는 정상 작동합니다.
+> ODD 자체 스킬만으로 완전한 거버넌스를 구성하는 방법: pyramid-ontology + ontology-review-gate + ontology-learning 3개로 기본 사이클 가능.
+
+| 스킬 | 목적 | 언제 | 필요 플러그인 |
+|------|------|------|-------------|
+| `superpowers:test-driven-development` | 검증 없는 구현 금지 — 테스트 먼저 | 기능 구현/버그 수정 시 | superpowers |
+| `superpowers:verification-before-completion` | 완료 선언 전 실제 동작 검증 강제 | 완료 보고 전 항상 | superpowers |
+| `superpowers:systematic-debugging` | 증상 픽스가 아닌 근본 원인 추적 강제 | 버그/에러 발생 시 | superpowers |
+| `superpowers:brainstorming` | 구현 전 설계 확인 강제 | 신기능/변경 전 | superpowers |
+| `superpowers:writing-plans` | 구현 계획 구체화 | 설계 승인 후 | superpowers |
+| `superpowers:executing-plans` | 계획 단계별 실행 | 계획 작성 후 | superpowers |
 
 ---
 
