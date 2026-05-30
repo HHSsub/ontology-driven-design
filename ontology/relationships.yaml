@@ -1,0 +1,132 @@
+# L0: ODD 개념 간 관계의 단일 진실원 — concept-registry.yaml 관계 섹션의 독립 export
+# L0.2: 외부 도구(트리플스토어, 그래프 DB)가 ODD 관계를 직접 수집할 수 있도록 한다
+# SSOT: 이 파일의 triples는 concept-registry.yaml relationships 섹션과 동기 상태를 유지해야 한다.
+# ExitCondition: concept-registry.yaml가 단일 파일로 완전히 충분한 도구 생태계가 갖춰질 때
+version: "1.0"
+source: "ontology/concept-registry.yaml"
+format: "subject-predicate-object triples"
+
+prefixes:
+  odd: "https://HHSsub.github.io/ontology-driven-design/odd#"
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#"
+  owl: "http://www.w3.org/2002/07/owl#"
+
+triples:
+  # 피라미드 위계 관계
+  - subject: odd:Purpose
+    predicate: odd:governs_all
+    object: odd:Architecture
+    note: "L0 governs L1 — architecture must serve the declared purpose"
+
+  - subject: odd:Architecture
+    predicate: odd:governs
+    object: odd:Decision
+    note: "L1 governs L2 — decisions must conform to structural design"
+
+  - subject: odd:Decision
+    predicate: odd:governs
+    object: odd:Execution
+    note: "L2 governs L3 — execution derives validity from decisions"
+
+  # rdfs 상위 개념 관계 (LinkML parent 대응)
+  - subject: odd:Architecture
+    predicate: rdfs:subClassOf
+    object: odd:Purpose
+    note: "L1 is a subclass of L0 in the pyramid sense — inherits purpose constraints"
+
+  - subject: odd:Decision
+    predicate: rdfs:subClassOf
+    object: odd:Architecture
+    note: "L2 is a subclass of L1"
+
+  - subject: odd:Execution
+    predicate: rdfs:subClassOf
+    object: odd:Decision
+    note: "L3 is a subclass of L2"
+
+  # 위반 관계
+  - subject: odd:ExistenceClinging
+    predicate: odd:violates
+    object: odd:Purpose
+    note: "Tool-binding in L0 inverts the pyramid — implementation becomes purpose"
+
+  - subject: odd:VibeDrift
+    predicate: odd:erodes
+    object: odd:Purpose
+    note: "Iterative AI generation without L0 anchoring causes progressive purpose loss"
+
+  # 지지 관계
+  - subject: odd:SSOT
+    predicate: odd:supports
+    object: odd:Purpose
+    note: "Single-source definitions prevent meaning drift across copies"
+
+  - subject: odd:ExitCondition
+    predicate: odd:mitigates
+    object: odd:ExistenceClinging
+    note: "Declaring when a binding expires transforms dependency into bounded commitment"
+
+  # 탐지·강제 관계
+  - subject: odd:ExitCondition
+    predicate: odd:required_by
+    object: odd:ExistenceClinging
+    note: "Every existence-clinging instance requires an exit condition declaration"
+
+  - subject: odd:PyramidHierarchy
+    predicate: odd:composed_of
+    object: odd:Purpose
+
+  - subject: odd:PyramidHierarchy
+    predicate: odd:composed_of
+    object: odd:Architecture
+
+  - subject: odd:PyramidHierarchy
+    predicate: odd:composed_of
+    object: odd:Decision
+
+  - subject: odd:PyramidHierarchy
+    predicate: odd:composed_of
+    object: odd:Execution
+
+predicate_definitions:
+  governs_all:
+    description: "The subject concept determines the validity of the object concept at all levels."
+    domain: odd:PyramidLevel
+    range: odd:PyramidLevel
+    transitivity: true
+
+  governs:
+    description: "The subject concept determines the validity of the immediately lower object concept."
+    domain: odd:PyramidLevel
+    range: odd:PyramidLevel
+    transitivity: false
+
+  violates:
+    description: "The subject concept's presence constitutes a breach of the object concept's rule."
+    domain: odd:AntiPattern
+    range: odd:Principle
+
+  erodes:
+    description: "The subject concept progressively weakens the object concept over time."
+    domain: odd:AntiPattern
+    range: odd:Principle
+
+  supports:
+    description: "The subject concept actively maintains or strengthens the object concept."
+    domain: odd:Principle
+    range: odd:Principle
+
+  mitigates:
+    description: "The subject concept reduces the severity or likelihood of the object concept."
+    domain: odd:Principle
+    range: odd:AntiPattern
+
+  required_by:
+    description: "The subject concept is mandated whenever the object concept is present."
+    domain: odd:Principle
+    range: odd:AntiPattern
+
+  composed_of:
+    description: "The subject concept is structurally made up of the object concept."
+    domain: odd:Structure
+    range: odd:PyramidLevel

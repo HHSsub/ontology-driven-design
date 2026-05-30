@@ -1,0 +1,243 @@
+# L0: ODD 개념 체계의 단일 진실원 — 기계와 인간 모두 읽을 수 있는 형태
+# L0.1: ODD 거버넌스 플러그인이 "machine-readable conceptual governance"로 진화하도록 지원
+# L0.2: 모든 ODD 핵심 개념의 권위 있는 출처 — 파생 파일은 이 파일에서 derive한다
+version: "1.0"
+namespace: "odd"
+schema_uri: "https://HHSsub.github.io/ontology-driven-design/schemas/odd.schema.json"
+
+concepts:
+  - id: odd:Purpose
+    label: "L0 / Purpose"
+    label_ko: "목적 / 존재 이유"
+    definition: "The deepest reason a code unit must exist. Cannot be stated in terms of tools or platforms."
+    definition_ko: "코드 단위가 존재해야 하는 가장 근본적 이유. 도구나 플랫폼으로 표현될 수 없다."
+    aliases:
+      - "L0"
+      - "Ontology Layer"
+    properties:
+      must_not_reference_tools: true
+      required_for_any_edit: true
+    examples:
+      - "L0: 사용자가 의도를 잃지 않고 코드를 진화시킬 수 있도록 한다"
+      - "L0: 팀이 비즈니스 목적과 구현 세부사항을 분리하여 사고할 수 있도록 한다"
+    counter_examples:
+      - "L0: React를 사용하여 컴포넌트를 렌더링한다"  # 도구 바인딩 — 금지
+      - "L0: AWS Lambda로 배포한다"  # 플랫폼 바인딩 — 금지
+
+  - id: odd:Architecture
+    label: "L1 / Architecture"
+    label_ko: "구조 / 아키텍처"
+    definition: "The invariant design that bridges L0 to reality. Changes only when L0 changes."
+    definition_ko: "L0를 현실로 끌어내리는 불변의 설계. L0가 바뀔 때만 바뀐다."
+    aliases:
+      - "L1"
+      - "Structure Layer"
+    parent: odd:Purpose
+    properties:
+      changes_only_when: "L0 changes"
+      describes: "system boundaries, module contracts, data flows"
+
+  - id: odd:Decision
+    label: "L2 / Decision"
+    label_ko: "판단 / 트레이드오프"
+    definition: "Where architecture meets reality, forcing choices. Every decision carries opportunity cost."
+    definition_ko: "구조를 현실에 적용할 때 발생하는 선택. 모든 결정은 기회비용을 수반한다."
+    aliases:
+      - "L2"
+      - "Logic Layer"
+    parent: odd:Architecture
+    properties:
+      must_document_cost: true
+      describes: "algorithm choices, library selections, concurrency strategy"
+
+  - id: odd:Execution
+    label: "L3 / Execution"
+    label_ko: "실행 / 구체"
+    definition: "The concrete act: code, configuration, physical steps. Derives its validity from L2."
+    definition_ko: "가장 구체적인 실체: 코드, 설정, 물리적 행동. 유효성은 L2에서 파생된다."
+    aliases:
+      - "L3"
+      - "Instance Layer"
+    parent: odd:Decision
+    properties:
+      validity_derived_from: odd:Decision
+      describes: "functions, classes, config files, CLI commands"
+
+  - id: odd:ExistenceClinging
+    label: "Existence-Clinging"
+    label_ko: "존재교착"
+    definition: >
+      When code or configuration is hardcoded to a specific tool or environment,
+      unable to exist without it. A form of ontological dependency that violates
+      the purpose layer by making implementation details the reason for existence.
+    definition_ko: >
+      코드나 설정이 특정 도구나 환경에 하드코딩되어 그것 없이 존재할 수 없는 상태.
+      구현 세부사항이 존재 이유가 되어 목적 레이어를 위반하는 존재론적 의존성.
+    violation_of: odd:Purpose
+    detected_by: "ontology-detach skill"
+    symptoms:
+      - "L0 declaration references a specific tool as its primary subject"
+      - "exit conditions are absent or undefined"
+      - "removal of one tool requires rewriting the entire module"
+    exit_condition_required: true
+
+  - id: odd:ExitCondition
+    label: "Exit Condition"
+    label_ko: "교체조건"
+    definition: >
+      The stated condition under which a binding (to a tool, platform, or
+      implementation) is no longer valid and must be replaced. Transforms
+      hard dependencies into declared, bounded commitments.
+    definition_ko: >
+      바인딩(도구, 플랫폼, 구현)이 더 이상 유효하지 않을 때를 미리 선언한 조건.
+      하드 의존성을 선언된, 범위가 있는 약속으로 전환한다.
+    required_by: odd:ExistenceClinging
+    enforced_by: "ontology-detach skill"
+    format: "# ExitCondition: <조건 서술>"
+    examples:
+      - "# ExitCondition: 프로젝트가 AWS 외 플랫폼으로 이전될 때"
+      - "# ExitCondition: React 의존성이 제거될 때"
+      - "# ExitCondition: 팀 규모가 10인 이하로 축소될 때"
+
+  - id: odd:SSOT
+    label: "Single Source of Truth"
+    label_ko: "단일 진실원"
+    definition: >
+      A concept or definition exists in exactly one location in the codebase.
+      Duplication of the same concept creates inevitable future inconsistency
+      because updates to one copy do not propagate to others.
+    definition_ko: >
+      동일한 개념의 정의가 코드베이스에서 정확히 한 곳에만 존재하는 상태.
+      같은 개념의 복제는 한 복사본의 업데이트가 다른 것에 전파되지 않으므로
+      불가피한 미래 불일치를 생성한다.
+    enforced_by: "pyramid_guard.py PostToolUse hook"
+    corollary: "Before modifying a concept definition, grep for all derivative expressions first."
+    violation_pattern: "Same semantic definition present in N > 1 locations"
+
+  - id: odd:VibeDrift
+    label: "Vibe-Code Drift"
+    label_ko: "목적 표류"
+    definition: >
+      The progressive loss of connection between AI-generated code and its
+      original L0 purpose. Occurs when iterative prompting causes each
+      generation to optimize for local coherence rather than the declared purpose.
+    definition_ko: >
+      AI가 생성한 코드가 원래 L0 목적과 점점 멀어지는 현상.
+      반복적 프롬프팅이 각 생성이 선언된 목적보다 지역적 일관성을 최적화하게 할 때 발생한다.
+    prevented_by: "pyramid_ontology_gate PreToolUse hook"
+    measurement: "Distance between current L3 and declared L0 (qualitative)"
+    early_warning_signs:
+      - "L0 declaration missing from recent edits"
+      - "Code comments reference platform names instead of purposes"
+      - "Functions are named after tools rather than behaviors"
+
+  - id: odd:PyramidHierarchy
+    label: "Pyramid Hierarchy"
+    label_ko: "피라미드 위계"
+    definition: >
+      The four-layer ontological structure (L0→L1→L2→L3) that governs all
+      ODD decisions. Higher layers are more abstract and more stable.
+      Lower layers derive their validity from the layers above.
+    definition_ko: >
+      모든 ODD 결정을 지배하는 4계층 존재론적 구조 (L0→L1→L2→L3).
+      상위 레이어일수록 더 추상적이고 더 안정적이다.
+      하위 레이어는 위 레이어에서 유효성을 파생한다.
+    composed_of:
+      - odd:Purpose
+      - odd:Architecture
+      - odd:Decision
+      - odd:Execution
+    stability_ordering: "L0 (most stable) → L3 (least stable)"
+
+relationships:
+  - subject: odd:Purpose
+    predicate: governs_all
+    object: odd:Architecture
+    description: "L0 governs L1 — architecture must serve the declared purpose"
+
+  - subject: odd:Architecture
+    predicate: governs
+    object: odd:Decision
+    description: "L1 governs L2 — decisions must conform to the structural design"
+
+  - subject: odd:Decision
+    predicate: governs
+    object: odd:Execution
+    description: "L2 governs L3 — execution derives validity from decisions"
+
+  - subject: odd:ExistenceClinging
+    predicate: violates
+    object: odd:Purpose
+    description: "Tool-binding in L0 inverts the hierarchy — implementation becomes purpose"
+
+  - subject: odd:SSOT
+    predicate: supports
+    object: odd:Purpose
+    description: "Single-source definitions prevent meaning drift across copies"
+
+  - subject: odd:ExitCondition
+    predicate: mitigates
+    object: odd:ExistenceClinging
+    description: "Declaring when a binding expires transforms dependency into bounded commitment"
+
+  - subject: odd:VibeDrift
+    predicate: erodes
+    object: odd:Purpose
+    description: "Iterative AI generation without L0 anchoring causes progressive purpose loss"
+
+constraints:
+  - id: odd:C001
+    label: "L0 Declaration Required"
+    description: >
+      Every edit session must begin with an L0 declaration. An edit without
+      a visible L0 is an edit without direction.
+    enforced_by: "pyramid_ontology_gate"
+    hook_file: "hooks/pyramid_ontology_gate.py"
+    trigger: "PreToolUse on Edit/Write/NotebookEdit"
+    violation_exit_code: 2
+    violation_message: "L0 선언 없이 편집 시작 불가"
+
+  - id: odd:C002
+    label: "No Tool Binding in L0"
+    description: >
+      L0 declarations must not reference specific tools, platforms, or
+      technologies as their primary subject. "L0: React로 렌더링한다" is
+      an L3 concern stated as L0 — a structural inversion.
+    enforced_by: "pyramid_guard.py"
+    hook_file: "hooks/pyramid_guard.py"
+    trigger: "PostToolUse on Edit/Write"
+    violation_exit_code: 2
+    violation_message: "L0 선언이 도구/플랫폼을 주어로 사용 불가"
+
+  - id: odd:C003
+    label: "Exit Condition Required for Bindings"
+    description: >
+      Every tool/platform binding must declare an exit condition.
+      Undeclared exit conditions are the primary cause of existence-clinging.
+    enforced_by: "ontology-detach skill"
+    hook_file: "skills/ontology-detach.md"
+    trigger: "Manual invocation — not auto-enforced by hook"
+    violation_exit_code: 0
+    violation_message: "바인딩에 교체조건(ExitCondition) 없음"
+
+  - id: odd:C004
+    label: "SSOT — No Duplicate Concept Definitions"
+    description: >
+      The same concept must not be defined in more than one location.
+      Before adding or modifying a concept definition, grep for existing occurrences.
+    enforced_by: "pyramid_guard.py"
+    hook_file: "hooks/pyramid_guard.py"
+    trigger: "PostToolUse on Edit/Write"
+    violation_exit_code: 2
+    violation_message: "동일 개념이 2곳 이상에 정의됨 — SSOT 위반"
+
+  - id: odd:C005
+    label: "Year Guard on Web Search"
+    description: >
+      All web searches must include the current year to prevent stale
+      information from being used in decisions.
+    enforced_by: "websearch_yearguard"
+    hook_file: "hooks/websearch_yearguard.py"
+    trigger: "PreToolUse on WebSearch"
+    violation_exit_code: 2
+    violation_message: "연도 없는 웹 검색 차단 — currentDate 연도를 포함할 것"

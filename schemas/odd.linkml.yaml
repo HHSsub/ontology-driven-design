@@ -1,0 +1,340 @@
+# L0: ODD 개념 체계를 표준 LinkML 형식으로 표현 — JSON Schema, OWL, Python dataclass 자동 생성 가능
+# ExitCondition: LinkML 생태계보다 더 경량화된 스키마 언어가 ODD 요구사항을 충족할 때
+id: https://HHSsub.github.io/ontology-driven-design/odd
+name: odd
+description: >
+  ODD — Ontology Driven Design schema.
+  Defines the machine-readable structure of the L0-L3 pyramid hierarchy,
+  existence-clinging anti-patterns, and governance constraints.
+
+prefixes:
+  odd: https://HHSsub.github.io/ontology-driven-design/odd#
+  linkml: https://w3id.org/linkml/
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  xsd: http://www.w3.org/2001/XMLSchema#
+
+default_prefix: odd
+default_range: string
+
+imports:
+  - linkml:types
+
+#
+# ── CLASSES ──────────────────────────────────────────────────────────────────
+#
+
+classes:
+
+  PyramidLevel:
+    description: >
+      An abstract level in the ODD L0-L3 hierarchy.
+      Higher levels are more abstract and more stable.
+      Lower levels derive their validity from the levels above.
+    abstract: true
+    slots:
+      - id
+      - label
+      - label_ko
+      - definition
+      - definition_ko
+      - aliases
+
+  PurposeLevel:
+    description: >
+      L0 — The deepest reason a code unit must exist.
+      Cannot be stated in terms of tools or platforms.
+    is_a: PyramidLevel
+    slots:
+      - must_not_reference_tools
+      - required_for_any_edit
+    slot_usage:
+      must_not_reference_tools:
+        required: true
+        equals_expression: "true"
+
+  ArchitectureLevel:
+    description: >
+      L1 — The invariant design that bridges L0 to reality.
+      Changes only when L0 changes.
+    is_a: PyramidLevel
+    slots:
+      - parent_level
+
+  DecisionLevel:
+    description: >
+      L2 — Where architecture meets reality, forcing choices.
+      Every decision carries opportunity cost.
+    is_a: PyramidLevel
+    slots:
+      - parent_level
+      - must_document_cost
+
+  ExecutionLevel:
+    description: >
+      L3 — The concrete act: code, configuration, physical steps.
+      Derives its validity from L2.
+    is_a: PyramidLevel
+    slots:
+      - parent_level
+
+  PyramidDeclaration:
+    description: >
+      A structured ODD governance declaration attached to a code artifact.
+      l0 is required; l1-l3 are optional but recommended for completeness.
+    slots:
+      - l0
+      - l1
+      - l2
+      - l3
+      - artifact_path
+    slot_usage:
+      l0:
+        required: true
+
+  ExistenceClinging:
+    description: >
+      Anti-pattern: code or configuration hardcoded to a specific tool or
+      environment, unable to exist without it. Violates odd:Purpose.
+    slots:
+      - id
+      - description
+      - detected_in
+      - exit_condition
+
+  ExitCondition:
+    description: >
+      The stated condition under which a binding is no longer valid and
+      must be replaced. Required whenever ExistenceClinging is present.
+    slots:
+      - id
+      - text
+      - bound_to
+      - artifact_path
+
+  Constraint:
+    description: >
+      An ODD governance constraint linked to an enforcement hook.
+      violation_exit_code 2 = blocking, 1 = warning, 0 = advisory.
+    slots:
+      - id
+      - label
+      - label_ko
+      - description
+      - description_ko
+      - enforced_by
+      - hook_file
+      - trigger
+      - violation_exit_code
+      - violation_message
+      - auto_enforced
+      - severity
+
+  ConceptRelationship:
+    description: A subject-predicate-object triple between ODD concepts.
+    slots:
+      - subject_concept
+      - predicate
+      - object_concept
+      - note
+
+  OntologyArtifact:
+    description: >
+      Top-level container for ODD ontology files such as concept-registry.yaml.
+    slots:
+      - version
+      - namespace
+      - concepts
+      - relationships
+      - constraints_list
+
+#
+# ── SLOTS ────────────────────────────────────────────────────────────────────
+#
+
+slots:
+
+  id:
+    identifier: true
+    range: uriorcurie
+    description: "Namespaced identifier, e.g. odd:Purpose or odd:C001"
+
+  label:
+    range: string
+    description: "Human-readable English label"
+
+  label_ko:
+    range: string
+    description: "Human-readable Korean label"
+
+  definition:
+    range: string
+    description: "Authoritative English definition of this concept"
+    required: true
+
+  definition_ko:
+    range: string
+    description: "Authoritative Korean definition of this concept"
+
+  aliases:
+    range: string
+    multivalued: true
+    description: "Alternative names or shorthand references for this concept"
+
+  parent_level:
+    range: PyramidLevel
+    description: "The pyramid level immediately above this one"
+
+  must_not_reference_tools:
+    range: boolean
+    description: "L0 declarations must not reference tools or platforms as primary subject"
+
+  required_for_any_edit:
+    range: boolean
+    description: "This level declaration is required before any edit can proceed"
+
+  must_document_cost:
+    range: boolean
+    description: "L2 decisions must document their opportunity cost"
+
+  l0:
+    range: string
+    pattern: "^L0(\\.\\d+)?:\\s*.{8,}"
+    description: "L0 purpose declaration text"
+
+  l1:
+    range: string
+    pattern: "^L1(\\.\\d+)?:\\s*.{5,}"
+    description: "L1 architecture declaration text"
+
+  l2:
+    range: string
+    pattern: "^L2(\\.\\d+)?:\\s*.{5,}"
+    description: "L2 decision declaration text"
+
+  l3:
+    range: string
+    pattern: "^L3(\\.\\d+)?:\\s*.{5,}"
+    description: "L3 execution declaration text"
+
+  artifact_path:
+    range: string
+    description: "Relative path to the file this declaration or exit condition applies to"
+
+  text:
+    range: string
+    description: "The verbatim exit condition statement"
+
+  bound_to:
+    range: string
+    description: "The tool, platform, or technology that this exit condition guards"
+
+  detected_in:
+    range: string
+    description: "File or code unit where existence-clinging was detected"
+
+  exit_condition:
+    range: ExitCondition
+    description: "The exit condition that mitigates this existence-clinging instance"
+
+  description:
+    range: string
+    description: "Prose description of this concept, constraint, or anti-pattern"
+
+  description_ko:
+    range: string
+    description: "Korean prose description"
+
+  enforced_by:
+    range: string
+    description: "Name of the hook or skill that enforces this constraint"
+
+  hook_file:
+    range: string
+    description: "Relative path to the hook file (e.g. hooks/pyramid_guard.py)"
+
+  trigger:
+    range: string
+    description: "When this hook fires (e.g. PreToolUse on Edit/Write)"
+
+  violation_exit_code:
+    range: integer
+    description: "Exit code on violation: 2=blocking, 1=warning, 0=advisory"
+
+  violation_message:
+    range: string
+    description: "User-facing message when constraint is violated"
+
+  auto_enforced:
+    range: boolean
+    description: "True if a hook automatically enforces this; false if manual invocation only"
+
+  severity:
+    range: SeverityEnum
+    description: "How serious a violation of this constraint is"
+
+  subject_concept:
+    range: string
+    description: "Subject of the relationship triple"
+
+  predicate:
+    range: string
+    description: "Predicate of the relationship triple"
+
+  object_concept:
+    range: string
+    description: "Object of the relationship triple"
+
+  note:
+    range: string
+    description: "Human-readable explanation of this relationship"
+
+  version:
+    range: string
+    pattern: "^\\d+\\.\\d+$"
+    description: "Schema version, e.g. 1.0"
+
+  namespace:
+    range: string
+    description: "Namespace prefix for all concept IDs in this artifact"
+
+  concepts:
+    range: PyramidLevel
+    multivalued: true
+    inlined_as_list: true
+    description: "All concept definitions in this ontology artifact"
+
+  relationships:
+    range: ConceptRelationship
+    multivalued: true
+    inlined_as_list: true
+    description: "All relationships between concepts"
+
+  constraints_list:
+    range: Constraint
+    multivalued: true
+    inlined_as_list: true
+    description: "All governance constraints in this ontology artifact"
+
+#
+# ── ENUMS ────────────────────────────────────────────────────────────────────
+#
+
+enums:
+
+  SeverityEnum:
+    permissible_values:
+      blocking:
+        description: "Violation immediately blocks the tool call (exit code 2)"
+      warning:
+        description: "Violation generates a warning but allows continuation (exit code 1)"
+      advisory:
+        description: "Violation is noted but not enforced automatically (exit code 0)"
+
+  HookTypeEnum:
+    permissible_values:
+      PreToolUse:
+        description: "Fires before a tool call executes"
+      PostToolUse:
+        description: "Fires after a tool call completes"
+      Stop:
+        description: "Fires when the Claude session is about to stop"
