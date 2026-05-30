@@ -19,8 +19,8 @@ from pathlib import Path
 
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 
-# L0 선언 패턴
-L0_RE = re.compile(r"\bL0\s*:", re.IGNORECASE)
+# L0 선언 패턴 — plain "L0:", 마크다운 볼드 "**L0**:", 헤딩 "# L0:" 등 변형 모두 인식
+L0_RE = re.compile(r"(?:\*{0,2})\bL0\b(?:\*{0,2})\s*:", re.IGNORECASE)
 
 # hooks 자체 파일 수정은 무한루프 방지를 위해 제외
 EXEMPT_SUFFIXES = {".json"}  # hooks.json 등 설정 파일
