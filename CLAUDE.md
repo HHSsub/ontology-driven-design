@@ -54,29 +54,32 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `/skills` | List all available skills and hooks |
 | `/frozen-exe` | Package Python script as standalone EXE |
 
-## Active Hooks (10 hooks, auto-trigger)
+## Active Hooks (14 hooks, auto-trigger)
 
 ### PreToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in content |
-| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
-| `assumption_declaration_gate` | Edit/Write/NotebookEdit | Blocks strategy .md files without [가정 명시] |
 | `websearch_yearguard` | WebSearch | Blocks queries without current year |
+| `destructive_bash_gate` | Bash | Blocks destructive bash commands (rm -rf, DROP TABLE, etc.) |
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in content |
+| `ontology_graph_gate` | Edit/Write/NotebookEdit | Checks ontology graph consistency |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
 
 ### PostToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
-| `git_commit_push_check` | Bash | Warns if unpushed commits after git commit |
 | `pptx_validate_hook` | Bash | Validates PPTX layout overflow after build_*_ppt.py |
+| `git_commit_push_check` | Bash | Warns if unpushed commits after git commit |
+| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
 
 ### Stop
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
-| `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
 | `tdd_enforce_stop` | Session end | Blocks if Edit/Write without verification |
+| `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
+| `assumption_declaration_gate` | Session end | Blocks if strategy docs missing [가정 명시] |
+| `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
+| `ontology_learning_enforce_stop` | Session end | Enforces ontology-learning after detected mistakes |
 
 ## Philosophy
 
