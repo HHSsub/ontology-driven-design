@@ -54,7 +54,7 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `/skills` | List all available skills and hooks |
 | `/frozen-exe` | Package Python script as standalone EXE |
 
-## Active Hooks (13 hooks, auto-trigger)
+## Active Hooks (15 hooks, auto-trigger)
 <!-- Source of truth: hooks/hooks.json — update this table when hooks.json changes -->
 
 ### PreToolUse
@@ -64,6 +64,7 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `destructive_bash_gate` | Bash | Blocks dangerous bash commands |
 | `agent_pyramid_gate` | Agent | Requires L0 + role spec for Agent calls |
 | `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
+| `ontology_detach_gate` | Edit/Write/NotebookEdit | Blocks L2 structural file edits without prior ontology-detach |
 | `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
 
 ### PostToolUse
