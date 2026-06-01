@@ -68,7 +68,7 @@ git clone https://github.com/HHSsub/ontology-driven-design.git
 | `/ontology-learning` | After any mistake | L3→L2→L1→L0 reverse analysis + memory evolution |
 | `/odd-onboarding` | New project setup | Interactive project ontology initialization |
 
-> **Works best with [superpowers](https://github.com/greptile/superpowers) plugin** for TDD, debugging, and planning skills. ODD is self-contained but the full governance stack integrates with superpowers.
+> **ODD is fully standalone** — all 8 skills and 13 hooks work without any other plugin. Optional: integrates with [superpowers](https://github.com/greptile/superpowers) for additional TDD, debugging, and planning skills.
 
 ---
 
