@@ -1,21 +1,97 @@
 {
   "name": "ontology-driven-design",
-  "description": "ODD — Ontology Driven Design. Purpose-governed engineering layer for AI coding agents. Enforces L0-L3 hierarchy, prevents vibe-code drift, and enforces source-of-truth discipline.",
+  "display_name": "ODD — Ontology Driven Design",
+  "description": "Purpose-governed engineering layer for AI coding agents. Enforces L0-L3 hierarchy (Purpose→Structure→Logic→Execution), prevents vibe-code drift, and enforces source-of-truth discipline through hooks and skills.",
   "version": "1.0.0",
   "license": "MIT",
   "author": {
     "name": "Hwang Hoe Sun (황회선)",
-    "email": "hhoesun@gmail.com"
+    "email": "hhoesun@gmail.com",
+    "url": "https://knowgram.vercel.app"
   },
   "homepage": "https://HHSsub.github.io/ontology-driven-design",
   "repository": "https://github.com/HHSsub/ontology-driven-design",
+  "category": "developer-tools",
   "keywords": [
     "ontology",
     "pyramid-thinking",
     "purpose-driven",
     "ai-workflows",
     "architecture",
-    "entropy",
-    "technical-debt"
-  ]
+    "governance",
+    "technical-debt",
+    "hooks",
+    "skills"
+  ],
+  "skills": [
+    {
+      "name": "pyramid-ontology",
+      "path": "skills/pyramid-ontology/SKILL.md",
+      "description": "Declares L0-L3 hierarchy as governing law for all decisions",
+      "trigger": "Use when starting ANY task"
+    },
+    {
+      "name": "ontology-detach",
+      "path": "skills/ontology-detach/SKILL.md",
+      "description": "Detects existence-clinging, enforces exit conditions on bindings",
+      "trigger": "Writing/reviewing code with bindings"
+    },
+    {
+      "name": "ontology-learning",
+      "path": "skills/ontology-learning/SKILL.md",
+      "description": "L3→L2→L1→L0 reverse analysis for permanent ontological evolution",
+      "trigger": "After any mistake or correction"
+    },
+    {
+      "name": "ontology-rebuild",
+      "path": "skills/ontology-rebuild/SKILL.md",
+      "description": "Rebuilds ONTOLOGY.md topology for all folders",
+      "trigger": "After major changes"
+    },
+    {
+      "name": "ontology-review-gate",
+      "path": "skills/ontology-review-gate/SKILL.md",
+      "description": "Ontology Court — PASS required before any implementation",
+      "trigger": "Before implementation"
+    },
+    {
+      "name": "pyramid-label",
+      "path": "skills/pyramid-label/SKILL.md",
+      "description": "Applies L0-L3 labels to all code units",
+      "trigger": "Before code review"
+    },
+    {
+      "name": "pyramid-topology",
+      "path": "skills/pyramid-topology/SKILL.md",
+      "description": "Full hierarchy integrity scan",
+      "trigger": "Before refactors"
+    },
+    {
+      "name": "odd-onboarding",
+      "path": "skills/odd-onboarding/SKILL.md",
+      "description": "Interactive project ontology initialization",
+      "trigger": "New project setup"
+    }
+  ],
+  "commands": [
+    "/pyramid-ontology",
+    "/ontology-detach",
+    "/ontology-rebuild",
+    "/pyramid-label",
+    "/pyramid-topology",
+    "/ontology-review-gate",
+    "/ontology-learning",
+    "/odd-onboarding"
+  ],
+  "hooks": "hooks/hooks.json",
+  "hooks_count": {
+    "PreToolUse": 6,
+    "PostToolUse": 2,
+    "Stop": 5,
+    "total": 13
+  },
+  "requirements": {
+    "claude_code": ">=1.0.0",
+    "python": ">=3.8"
+  }
 }
