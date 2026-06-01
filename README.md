@@ -83,6 +83,7 @@ Hooks enforce ODD governance automatically — no manual invocation needed.
 | `destructive_bash_gate` | Bash | Blocks dangerous commands (force-delete, DROP TABLE, etc.) |
 | `agent_pyramid_gate` | Agent | Requires L0 declaration + role spec for all Agent calls |
 | `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
+| `ontology_detach_gate` | Edit/Write/NotebookEdit | Requires ontology-detach before structural file edits |
 | `ontology_violation_gate` | Edit/Write/NotebookEdit | Enforces violation_registry.json rules |
 
 ### PostToolUse

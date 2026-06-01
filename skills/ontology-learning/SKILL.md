@@ -42,6 +42,30 @@ L1 부재: [어떤 체크포인트 / 프로세스 / 질문이 있었다면 L2 �
 있었어야 했던 것: [이 상황 유형에서 반드시 해야 했던 것]
 ```
 
+### Phase 3.5 — 조건부 Detach 판단 (선택적)
+
+Phase 3 완료 직후, 다음 신호 중 하나라도 있으면 **ontology-detach 스킬을 먼저 발동**한 후 Phase 4로 진행.
+
+**신호 A — 반복 패턴**: 동일한 L0/L1 유형 실수가 memory에 이미 존재한다
+```
+memory/feedback_ontology_*.md 중 동일 패턴 파일이 있는가?
+→ 있으면: 기존 세계관이 변하지 않아 같은 실수가 반복된 것. detach 발동.
+```
+
+**신호 B — 개념 부재**: Phase 3에서 찾은 "있었어야 하는 체크포인트"가
+기존 세계관에 아예 없었던 개념이다
+```
+그 체크포인트를 "알고 있었는데 안 한" 것인가?
+아니면 "그 개념 자체가 내 프레임에 없었던" 것인가?
+→ 후자면: L0 세계관 자체를 교체해야 함. detach 발동.
+```
+
+**신호 없음** (알고 있던 것을 실수한 L3/L2 수준) → **Phase 4 직행**
+
+**신호 있음** → `Skill tool: ontology-detach` 발동 → detach 완료 후 **새 관점으로 Phase 4 재실행**
+
+---
+
 ### Phase 4 — 세계관/원칙 레이어 추출 (L0)
 
 ```
@@ -92,13 +116,13 @@ Phase 4에서 추출한 L0/L1을 "강제 가능한 구조"로 변환한다:
 다음 순서로 확인:
 
 ```
-1. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/violation_registry.json 읽기
+1. C:/Users/User/.claude/hooks/violation_registry.json 읽기
    → 동일 L0/L1 구조를 이미 커버하는 rule이 있는가?
 
-2. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/*.py 목록 확인
+2. C:/Users/User/.claude/hooks/*.py 목록 확인
    → 동일 목적의 훅이 이미 있는가?
 
-3. ${CLAUDE_HOOKS_DIR:-~/.claude}/settings.json hooks 섹션 확인
+3. C:/Users/User/.claude/settings.json hooks 섹션 확인
    → 등록된 훅 중 이 상황을 커버해야 했는데 안 한 것이 있는가?
 ```
 
@@ -148,11 +172,11 @@ violation_registry.json의 해당 rule 찾기
 
 ```bash
 # 차단 케이스 (위반 예시) — exit 1이 나와야 함
-echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## API란 무엇인가\n..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## API란 무엇인가\n..."}}' | python C:/Users/User/.claude/hooks/ontology_violation_gate.py
 echo "exit: $?"
 
 # 통과 케이스 (올바른 예시) — exit 0이 나와야 함
-echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## 카카오 지도 — 고객이 찾아오게 만들기\n실습 순서..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## 카카오 지도 — 고객이 찾아오게 만들기\n실습 순서..."}}' | python C:/Users/User/.claude/hooks/ontology_violation_gate.py
 echo "exit: $?"
 ```
 
@@ -161,7 +185,7 @@ echo "exit: $?"
 ## 중앙 훅 아키텍처
 
 ```
-${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/
+C:/Users/User/.claude/hooks/
   ontology_violation_gate.py   ← 중앙 게이트 (이 파일은 로직 엔진)
   violation_registry.json      ← 규칙 데이터 (ontology-learning이 업데이트)
   [기존 특수 훅들]              ← 건드리지 않음 (다른 목적)
@@ -203,7 +227,7 @@ ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/
 
 ## 자동 발동 조건
 
-다음 조건 중 하나이면 무조건 (superpowers 없이도 자동 발동):
+using-superpowers 규칙에 의해 다음 중 하나이면 무조건:
 1. 유저가 내 출력을 지적·교정한다
 2. 유저가 화를 낸다 (표현 방식 무관)
 3. 내가 "다음엔" "죄송" "틀렸네"를 쓰려 한다
