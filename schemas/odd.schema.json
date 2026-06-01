@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://HHSsub.github.io/ontology-driven-design/schemas/odd.schema.json",
+  "title": "ODD Artifact Schema",
+  "description": "Schema for validating ODD governance declarations and artifacts. L0: 외부 도구가 ODD 준수 여부를 독립적으로 검증할 수 있도록 한다.",
+  "type": "object",
+
+  "$defs": {
+    "L0Declaration": {
+      "type": "string",
+      "description": "L0 purpose declaration — the deepest reason a code unit must exist. Must not reference tools or platforms as primary subject.",
+      "pattern": "^L0(\\.\\d+)?:\\s*.{8,}",
+      "minLength": 10,
+      "examples": [
+        "L0: 사용자가 의도를 잃지 않고 코드를 진화시킬 수 있도록 한다",
+        "L0.1: ODD 거버넌스 플러그인이 machine-readable governance로 진화하도록 지원",
+        "L0: Teams can separate business purpose from implementation details"
+      ]
+    },
+
+    "L1Declaration": {
+      "type": "string",
+      "description": "L1 architecture declaration — the invariant design bridging L0 to reality.",
+      "pattern": "^L1(\\.\\d+)?:\\s*.{5,}",
+      "minLength": 8
+    },
+
+    "L2Declaration": {
+      "type": "string",
+      "description": "L2 decision declaration — where architecture meets reality, forcing choices.",
+      "pattern": "^L2(\\.\\d+)?:\\s*.{5,}",
+      "minLength": 8
+    },
+
+    "L3Declaration": {
+      "type": "string",
+      "description": "L3 execution declaration — the concrete act: code, configuration, physical steps.",
+      "pattern": "^L3(\\.\\d+)?:\\s*.{5,}",
+      "minLength": 8
+    },
+
+    "ExitCondition": {
+      "type": "string",
+      "description": "A declared exit condition for a tool/platform binding. Required whenever existence-clinging is present.",
+      "pattern": "^(#\\s*)?ExitCondition:\\s*.{10,}",
+      "minLength": 15,
+      "examples": [
+        "# ExitCondition: 프로젝트가 AWS 외 플랫폼으로 이전될 때",
+        "ExitCondition: React dependency is removed from the project"
+      ]
+    },
+
+    "PyramidDeclaration": {
+      "type": "object",
+      "description": "A structured ODD pyramid declaration with at least L0 declared.",
+      "properties": {
+        "l0": { "$ref": "#/$defs/L0Declaration" },
+        "l1": { "$ref": "#/$defs/L1Declaration" },
+        "l2": { "$ref": "#/$defs/L2Declaration" },
+        "l3": { "$ref": "#/$defs/L3Declaration" }
+      },
+      "required": ["l0"],
+      "additionalProperties": false
+    },
+
+    "ConceptId": {
+      "type": "string",
+      "description": "A concept identifier in the ODD namespace.",
+      "pattern": "^odd:[A-Za-z][A-Za-z0-9]*$",
+      "examples": [
+        "odd:Purpose",
+        "odd:Architecture",
+        "odd:ExistenceClinging",
+        "odd:SSOT"
+      ]
+    },
+
+    "ConstraintId": {
+      "type": "string",
+      "description": "A constraint identifier in the ODD namespace.",
+      "pattern": "^odd:C\\d{3}$",
+      "examples": ["odd:C001", "odd:C002", "odd:C003"]
+    },
+
+    "HookReference": {
+      "type": "object",
+      "description": "A reference to an ODD enforcement hook.",
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Relative path to the hook file.",
+          "pattern": "^hooks/[a-z_]+\\.py$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["PreToolUse", "PostToolUse", "Stop"],
+          "description": "When this hook fires in the tool lifecycle."
+        },
+        "triggers_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tool names that trigger this hook."
+        }
+      },
+      "required": ["file", "type"],
+      "additionalProperties": false
+    },
+
+    "Concept": {
+      "type": "object",
+      "description": "An ODD ontology concept as defined in concept-registry.yaml.",
+      "properties": {
+        "id": { "$ref": "#/$defs/ConceptId" },
+        "label": { "type": "string" },
+        "label_ko": { "type": "string" },
+        "definition": { "type": "string", "minLength": 20 },
+        "definition_ko": { "type": "string", "minLength": 20 },
+        "aliases": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "parent": { "$ref": "#/$defs/ConceptId" },
+        "violation_of": { "$ref": "#/$defs/ConceptId" },
+        "enforced_by": { "type": "string" },
+        "exit_condition_required": { "type": "boolean" }
+      },
+      "required": ["id", "label", "definition"],
+      "additionalProperties": true
+    },
+
+    "Constraint": {
+      "type": "object",
+      "description": "An ODD governance constraint linked to an enforcement hook.",
+      "properties": {
+        "id": { "$ref": "#/$defs/ConstraintId" },
+        "label": { "type": "string" },
+        "label_ko": { "type": "string" },
+        "description": { "type": "string", "minLength": 20 },
+        "enforced_by": { "type": "string" },
+        "hook_file": { "type": "string" },
+        "trigger": { "type": "string" },
+        "violation_exit_code": {
+          "type": "integer",
+          "enum": [0, 1, 2],
+          "description": "0=advisory, 1=warning, 2=blocking"
+        },
+        "violation_message": { "type": "string" },
+        "auto_enforced": { "type": "boolean" },
+        "severity": {
+          "type": "string",
+          "enum": ["blocking", "warning", "advisory"]
+        }
+      },
+      "required": ["id", "label", "description", "enforced_by", "violation_exit_code"],
+      "additionalProperties": true
+    },
+
+    "Triple": {
+      "type": "object",
+      "description": "A subject-predicate-object relationship triple.",
+      "properties": {
+        "subject": { "type": "string" },
+        "predicate": { "type": "string" },
+        "object": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["subject", "predicate", "object"],
+      "additionalProperties": false
+    },
+
+    "OntologyArtifact": {
+      "type": "object",
+      "description": "Top-level structure for ODD ontology files (concept-registry.yaml, etc.).",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+$"
+        },
+        "namespace": {
+          "type": "string",
+          "const": "odd"
+        },
+        "concepts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Concept" },
+          "minItems": 1
+        },
+        "relationships": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Triple" }
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Constraint" }
+        }
+      },
+      "required": ["version", "namespace", "concepts"],
+      "additionalProperties": true
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/$defs/OntologyArtifact" },
+    { "$ref": "#/$defs/PyramidDeclaration" },
+    { "$ref": "#/$defs/Constraint" },
+    { "$ref": "#/$defs/Concept" }
+  ],
+
+  "examples": [
+    {
+      "version": "1.0",
+      "namespace": "odd",
+      "concepts": [
+        {
+          "id": "odd:Purpose",
+          "label": "L0 / Purpose",
+          "definition": "The deepest reason a code unit must exist."
+        }
+      ]
+    }
+  ]
+}

@@ -80,24 +80,56 @@ _L0_VIOLATION = re.compile(
 #
 # ✅ 통과 (L0):  SNS 업로드 자동화
 # ✅ 통과 (L1):  음악→영상→업로드 end-to-end 파이프라인
-# ❌ 차단 (L0):  Python으로 영상 처리            (언어 고정)
-# ❌ 차단 (L0):  ffmpeg 기반 인코딩              (도구 고정)
-# ❌ 차단 (L1):  .py 파일에서 비동기 처리         (파일형식+언어 고정)
-# ❌ 차단 (L1):  Edit tool로 파일 수정 감시        (도구 고정)
-# ❌ 차단 (L1):  FastAPI 라우터 경유             (프레임워크 고정)
+# ✅ 통과 (L0):  Claude Code 플러그인이 더 많은 개발자에게 채택됨  (플랫폼이 목적의 문맥)
+# ✅ 통과 (L0):  Claude API를 통한 LLM 파이프라인 자동화          (플랫폼이 목적 주어)
+# ❌ 차단 (L0):  Python을 사용해 영상 처리            (언어 고정 — 도구를 주어/동사로)
+# ❌ 차단 (L0):  ffmpeg로 인코딩                     (도구 고정 — 도구를 행위 주체로)
+# ❌ 차단 (L1):  .py 파일에서 비동기 처리             (파일형식+언어 고정)
+# ❌ 차단 (L1):  Edit tool로 파일 수정 감시           (도구 고정)
+# ❌ 차단 (L1):  FastAPI 라우터 경유                 (프레임워크 고정)
+#
+# 핵심 원칙 (ISSUE-019 수정):
+#   플랫폼/언어명이 "주어+동사" 구조로 쓰일 때만 차단.
+#   예: "Python을 사용", "ffmpeg로 처리", "FastAPI 기반", ".py 파일에서" → 차단
+#   예: "Claude Code 플러그인", "Claude API 채택됨" → 통과 (목적 문맥)
+#
+# 구현: 플랫폼명 + 도구종속 동사/조사 패턴으로 좁힘
 _TOOL_BINDING = re.compile(
-    r"\b("
-    # 프로그래밍 언어
-    r"Python\b|\.py\b|JavaScript\b|TypeScript\b|\.ts\b|\.js\b|\.jsx\b|\.tsx\b"
-    r"|Ruby\b|Golang\b|Rust\b|Java\b|C\+\+\b|C#\b|PHP\b"
-    # 특정 프레임워크/런타임
-    r"|ffmpeg\b|subprocess\b|asyncio\b|FastAPI\b|React\b|Vue\b|Next\.js\b"
-    r"|SQLAlchemy\b|Alembic\b|pydantic\b|uvicorn\b"
-    # Claude Code 도구명 고정
-    r"|Edit\s+tool\b|Write\s+tool\b|Bash\s+tool\b"
-    r"|PostToolUse\b|PreToolUse\b|Stop\s+hook\b"
-    r"|Claude\s+Code\b|Claude\s+Desktop\b|Claude\s+API\b"
-    r")\b",
+    r"(?:"
+    # ── 파일형식 확장자 고정 — 항상 차단 ────────────────────────────────────────
+    # 파일형식이 L0/L1 목적 문맥에 쓰일 일 없음.
+    # 주의: 한국어 조사(파, 로 등)는 re에서 \w → \b가 성립 안 함. (?!\w)로 대체.
+    r"\.py(?!\w)|\.ts(?!\w)|\.js(?!\w)|\.jsx(?!\w)|\.tsx(?!\w)"
+    # ── 구현 도구 — 도구명 + 도구종속 조사/동사 패턴 ─────────────────────────────
+    # "ffmpeg로", "ffmpeg 기반", "ffmpeg을 이용" → 차단
+    # 단독 "ffmpeg" (주어/목적어로만)는 L0에 쓰일 가능성이 거의 없으나 보수적으로 포함
+    r"|ffmpeg(?:\s*(?:로|으로|기반|을|을\s*사용|으로\s*실행))"
+    r"|subprocess(?:\s*(?:로|으로|기반|\.run|을|으로\s*실행))"
+    r"|asyncio(?:\s*(?:로|으로|기반|\.|\s+await))"
+    # ── 프로그래밍 언어 + 도구종속 동사/조사 조합 ────────────────────────────────
+    # 언어명이 "수단"으로 쓰일 때만 차단. 목적 문맥("Python 생태계", "Java 애플리케이션")은 통과.
+    r"|Python(?:\s*(?:을|로|으로|을\s*사용|으로\s*구현|을\s*이용|기반으로|스크립트))"
+    r"|JavaScript(?:\s*(?:을|로|으로|을\s*사용|으로\s*구현|기반으로))"
+    r"|TypeScript(?:\s*(?:을|로|으로|을\s*사용|으로\s*구현|기반으로))"
+    r"|Ruby(?:\s*(?:로|으로|기반으로|을\s*사용))"
+    r"|Golang(?:\s*(?:으로|기반으로|을\s*사용))"
+    r"|Rust(?:\s*(?:로|으로|기반으로|을\s*사용))"
+    r"|Java(?:\s*(?:로|으로|기반으로|을\s*사용))"
+    r"|C\+\+(?:\s*(?:로|으로|기반으로))"
+    # ── 특정 프레임워크/ORM — 프레임워크명 + 도구종속 조사/동사 ──────────────────
+    r"|FastAPI(?:\s*(?:로|으로|기반|라우터|경유|를\s*통해))"
+    r"|React(?:\s*(?:로|으로|기반|컴포넌트로|를\s*이용))"
+    r"|Vue(?:\s*(?:로|으로|기반))"
+    r"|Next\.js(?:\s*(?:로|으로|기반))"
+    r"|SQLAlchemy(?:\s*(?:로|으로|기반|을\s*통해|를\s*통해|을\s*사용|를\s*사용))"
+    r"|Alembic(?:\s*(?:로|으로|기반|migration))"
+    r"|pydantic(?!\w)|uvicorn(?!\w)"
+    # ── Claude Code 내부 도구명 — 도구명 + tool 조합은 항상 차단 ──────────────────
+    # "Edit tool로", "Write tool을" → 차단 (한국어 조사가 붙어도 차단)
+    # 단독 "Edit"은 영어 일반 동사이므로 "tool" 동반 필수
+    r"|Edit\s+tool|Write\s+tool|Bash\s+tool"
+    r"|PostToolUse(?!\w)|PreToolUse(?!\w)|Stop\s+hook"
+    r")",
     re.IGNORECASE,
 )
 

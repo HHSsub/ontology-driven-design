@@ -6,3 +6,9 @@ docs/.vitepress/cache/
 .env
 .env.*
 package-lock.json
+
+special_advice/
+
+# ODD 개인 케이스 — 공개 배포 금지
+hooks/violation_registry.personal.json
+hooks/__pycache__/

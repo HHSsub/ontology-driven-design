@@ -1,6 +1,7 @@
 {
   "name": "ontology-driven-design",
   "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
   "description": "ODD — Ontology Driven Design. A Claude Code plugin for purpose-driven AI workflows.",
   "scripts": {

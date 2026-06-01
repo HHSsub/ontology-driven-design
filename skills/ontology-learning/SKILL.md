@@ -11,9 +11,9 @@ description: MANDATORY — Use when (1) user corrects you, (2) user expresses fr
 
 "다음엔 조심하겠습니다"는 진화가 아니다. 그것은 L3(실행) 수준의 패치다.
 진화란: 이 실수를 만들어낸 L2 판단 규칙, L1 구조, L0 세계관이 실제로 바뀌는 것이다.
-바뀌지 않은 것은 배운 것이 아니다. 메모리에 남지 않은 것은 다음 세션에서 같은 실수다.
+바뀌지 않은 것은 배운 것이 아니다.
 
-**이 스킬의 목적 = 클로드의 인식론적 레이어를 실제로 업데이트하는 것.**
+**메모리 = 기억 / 강제 메커니즘 = 행동 강제. 진화는 둘 다 필요하다.**
 
 ---
 
@@ -65,11 +65,112 @@ L0 단절: [이 실수의 뿌리에 있는 잘못된 세계관 또는 암묵적 
   ```
 - MEMORY.md에 포인터 추가
 
-### Phase 6 — 훅 평가 (도구 사용 패턴과 연관된 경우)
+### Phase 6 — 강제 메커니즘 평가 및 개선 (선분석 우선)
 
-실수가 특정 도구 사용(Edit/Write/Bash/Read)과 패턴적으로 연관된 경우:
-→ PreToolUse 또는 PostToolUse 훅 추가 검토
-→ 추가 전 반드시 유저에게 보고 후 승인 받기
+**흐름: 분석 → 기존 확인 → 개선 or 추가. 새 파일 생성은 마지막 수단.**
+
+#### 6-1: L0/L1 위반의 구조 추출
+
+Phase 4에서 추출한 L0/L1을 "강제 가능한 구조"로 변환한다:
+
+```
+내가 차단해야 할 것은:
+  [특정 키워드]가 아니라
+  [그 키워드를 만든 L0/L1 구조]다.
+
+구조 표현:
+  "파일 유형 X에서 Y라는 구조가 있고 Z라는 요소가 없을 때"
+```
+
+❌ 잘못된 구조 추출: "API란이라는 문자열"
+✅ 올바른 구조 추출: "커리큘럼 파일에서 교육 목적 섹션 헤딩 구조 (이란/원리/이해하기/비유 framing)"
+
+→ 올바른 구조는 특정 기술명에 독립적이다. "API란", "GitHub이란", "DNS란" 모두 동일 구조 → 하나의 규칙으로 모두 차단.
+
+#### 6-2: 기존 강제 메커니즘 확인 (먼저)
+
+다음 순서로 확인:
+
+```
+1. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/violation_registry.json 읽기
+   → 동일 L0/L1 구조를 이미 커버하는 rule이 있는가?
+
+2. ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/*.py 목록 확인
+   → 동일 목적의 훅이 이미 있는가?
+
+3. ${CLAUDE_HOOKS_DIR:-~/.claude}/settings.json hooks 섹션 확인
+   → 등록된 훅 중 이 상황을 커버해야 했는데 안 한 것이 있는가?
+```
+
+#### 6-3: 결과에 따라 분기
+
+**케이스 A: 기존 rule이 이미 커버함 → 기존 rule 개선**
+```
+violation_registry.json의 해당 rule 찾기
+→ 왜 이번에 잡지 못했는가? (패턴 누락? 파일 필터 미스?)
+→ rule 내 patterns 또는 file_filter 업데이트
+→ 새 파일 생성 없음
+```
+
+**케이스 B: 관련 rule 없음 → violation_registry.json에 새 rule 추가**
+```json
+{
+  "id": "규칙_슬러그",
+  "enabled": true,
+  "l0": "Phase 4에서 추출한 L0 원칙",
+  "l1_pattern": "Phase 3에서 추출한 L1 구조 설명",
+  "file_filter": {
+    "path_must_contain_any": ["관련_경로_키워드"],
+    "extensions": [".md"]
+  },
+  "checks": [
+    {
+      "type": "heading_structure | section_outcome_grounding | content_structure",
+      "description": "이 체크가 잡는 L1 패턴",
+      "patterns": ["정규식_패턴들"],
+      "block_message": "차단 시 표시할 메시지 — 재작성 방법 포함"
+    }
+  ]
+}
+```
+→ `ontology_violation_gate.py`가 자동으로 새 rule 적용
+
+**케이스 C: 새로운 check type이 필요해서 기존 gate.py로 구현 불가 → 새 .py 파일**
+```
+이 케이스는 극히 드물다.
+기존 check type으로 커버 안 되는 논리가 필요할 때만.
+새 .py 만들어도 settings.json에 중앙 등록.
+```
+
+#### 6-4: 훅 동작 검증
+
+어떤 케이스든 변경 후:
+
+```bash
+# 차단 케이스 (위반 예시) — exit 1이 나와야 함
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## API란 무엇인가\n..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
+echo "exit: $?"
+
+# 통과 케이스 (올바른 예시) — exit 0이 나와야 함
+echo '{"tool_name":"Write","tool_input":{"file_path":"왕초보/4회차.md","content":"## 카카오 지도 — 고객이 찾아오게 만들기\n실습 순서..."}}' | python ${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/ontology_violation_gate.py
+echo "exit: $?"
+```
+
+---
+
+## 중앙 훅 아키텍처
+
+```
+${CLAUDE_HOOKS_DIR:-~/.claude/hooks}/
+  ontology_violation_gate.py   ← 중앙 게이트 (이 파일은 로직 엔진)
+  violation_registry.json      ← 규칙 데이터 (ontology-learning이 업데이트)
+  [기존 특수 훅들]              ← 건드리지 않음 (다른 목적)
+```
+
+**새 실수 발생 시:**
+- violation_registry.json에 rule 추가 (또는 기존 rule 개선)
+- .py 파일 새로 만들지 않음
+- 훅 수 증가 없이 커버리지 증가
 
 ---
 
@@ -79,20 +180,24 @@ L0 단절: [이 실수의 뿌리에 있는 잘못된 세계관 또는 암묵적 
 |------------|-----------|
 | "다음엔 sort='sim' 쓸게" | "API 파라미터는 원본 검증 없이 가정하지 않는다" |
 | "이번엔 확인할게" | "연구 데이터 변경 시 방법론 일관성이 편의보다 절대 우선" |
-| "실수했다 — 수정함" | "이 실수가 보여준 내 추론 패턴의 결함 + 보편 원칙 추출" |
-| 특정 실수를 기억 | 실수를 만든 사고 레이어를 재설계 |
+| 특정 키워드 차단 훅 | 그 키워드를 만든 L0/L1 구조를 차단하는 rule |
+| 실수마다 새 .py 파일 | violation_registry.json에 rule 추가 |
+| 메모리만 저장 | 메모리(기억) + violation rule(강제) |
 
 ---
 
-## Red Flags — 이 스킬이 무력화될 때
+## Red Flags
 
 | 생각 | 의미 | 올바른 행동 |
 |------|------|-----------|
 | "이번만 특별한 경우" | L2 분석 회피 | Phase 2 강제 실행 |
 | "Phase 4까지 할 필요 없어" | 진화 아닌 패칭 | Phase 4 필수 |
 | "나중에 메모리 저장" | 이번 세션만 기억 | Phase 5 즉시 실행 |
+| "메모리 저장했으니 완료" | 강제 없음 | Phase 6 반드시 진행 |
+| "키워드 차단 rule 만들면 됨" | L3 패칭 | L0/L1 구조로 재추상화 |
+| "새 .py 파일 만들면 됨" | 훅 증식 | violation_registry.json rule 먼저 |
+| "기존 확인 안 하고 새로 만듦" | 중복 + 목적 희석 | 6-2 기존 확인 먼저 |
 | "죄송합니다" 후 수정 | 이 스킬 발동 안 함 | 이 스킬 먼저 |
-| "비슷한 실수는 없었어" | Phase 4 미완 | 유사 패턴 3개 이상 강제 |
 
 ---
 
@@ -112,28 +217,14 @@ using-superpowers 규칙에 의해 다음 중 하나이면 무조건:
 ## 온톨로지 계보
 
 ```
-pyramid-ontology (상위 법칙 — 모든 행동의 L0 연결 강제)
-  └─ ontology-learning (이것) — 실수를 통한 온톨로지 진화
+pyramid-ontology (상위 법칙)
+  └─ ontology-learning (이것) — 진화 프로세스
        ├─ Phase 1-4: L3→L2→L1→L0 역추적 (진단)
-       ├─ Phase 5: 보편 원칙 메모리화 (영구 학습)
-       └─ Phase 6: 훅 (행동 레이어 강제)
-```
-
----
-
-## 적용 예시
-
-```
-L3: zero_keyword_crawler에서 sort='date' 사용 → 2025-2026 기사만 반환됨
-
-L2: "기존 코드가 맞겠지"라는 검증 없는 가정.
-    원본 크롤러와 파라미터 비교 없이 작성.
-
-L1: 데이터 수집 코드 변경 전 "원본 코드와 대조" 체크포인트 없음.
-
-L0: 연구 데이터 수집 = 방법론 일관성이 편의보다 절대 우선.
-    이것을 암묵적으로 "코드 빠른 완성"으로 대체함.
-
-보편 원칙: 연구·데이터 파이프라인에서 어떤 파라미터/방법 변경도
-          반드시 원본(기준 버전)과 대조 확인 후 진행한다.
+       ├─ Phase 5: 메모리화 (기억)
+       └─ Phase 6: 강제 메커니즘 개선 (강제)
+            ├─ 선분석: L0/L1 구조 추출
+            ├─ 기존 확인: violation_registry.json + hooks/*.py
+            ├─ 케이스 A: 기존 rule 개선
+            ├─ 케이스 B: violation_registry.json에 rule 추가
+            └─ 케이스 C (최후): 새 .py 파일
 ```

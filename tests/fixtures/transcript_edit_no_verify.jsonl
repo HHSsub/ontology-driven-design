@@ -1,0 +1,4 @@
+{"message":{"role":"user","content":[{"type":"text","text":"코드 수정해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"L0: 코드 수정\n수정합니다."},{"type":"tool_use","id":"tool_1","name":"Edit","input":{"file_path":"/tmp/sample.py","old_string":"pass","new_string":"return 1"}}]}}
+{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool_1","content":[{"type":"text","text":"OK"}]}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"수정했습니다."}]}}

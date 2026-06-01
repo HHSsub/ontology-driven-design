@@ -19,8 +19,8 @@ from pathlib import Path
 
 EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 
-# L0 선언 패턴
-L0_RE = re.compile(r"\bL0\s*:", re.IGNORECASE)
+# L0 선언 패턴 — plain "L0:", 마크다운 볼드 "**L0**:", 헤딩 "# L0:" 등 변형 모두 인식
+L0_RE = re.compile(r"(?:\*{0,2})\bL0\b(?:\*{0,2})\s*:", re.IGNORECASE)
 
 # hooks 자체 파일 수정은 무한루프 방지를 위해 제외
 EXEMPT_SUFFIXES = {".json"}  # hooks.json 등 설정 파일
@@ -95,23 +95,23 @@ def main() -> int:
     if not messages:
         return 0
 
-    if _has_l0_in_session(messages):
-        return 0  # L0 선언 있음 → 통과
+    if not _has_l0_in_session(messages):
+        err = (
+            "\n══════════════════════════════════════════════\n"
+            "❌ L0 선언 없음 — Edit/Write 차단\n"
+            "══════════════════════════════════════════════\n"
+            "이번 세션에서 L0 선언을 한 적이 없습니다.\n"
+            "수정 전 반드시 목적을 선언하세요:\n\n"
+            "  L0: [이 수정이 달성하는 비즈니스 최종 목적]\n"
+            "  L1: [이 수정이 기여하는 시스템 목표]\n\n"
+            "선언 없이 코드 수정 = 방향 없는 행동\n"
+            "superpowers 설치 여부와 무관하게 적용됩니다.\n"
+            "══════════════════════════════════════════════"
+        )
+        print(err, file=sys.stderr)
+        return 2
 
-    err = (
-        "\n══════════════════════════════════════════════\n"
-        "❌ L0 선언 없음 — Edit/Write 차단\n"
-        "══════════════════════════════════════════════\n"
-        "이번 세션에서 L0 선언을 한 적이 없습니다.\n"
-        "수정 전 반드시 목적을 선언하세요:\n\n"
-        "  L0: [이 수정이 달성하는 비즈니스 최종 목적]\n"
-        "  L1: [이 수정이 기여하는 시스템 목표]\n\n"
-        "선언 없이 코드 수정 = 방향 없는 행동\n"
-        "superpowers 설치 여부와 무관하게 적용됩니다.\n"
-        "══════════════════════════════════════════════"
-    )
-    print(err, file=sys.stderr)
-    return 2
+    return 0
 
 
 if __name__ == "__main__":

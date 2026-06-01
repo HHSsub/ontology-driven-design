@@ -1,0 +1,8 @@
+# ODD hook dependencies
+# Python 3.8+ required
+
+# Required for pptx_validate_hook.py
+python-pptx>=0.6.21
+
+# All other hooks use only Python standard library:
+# json, re, sys, pathlib, subprocess — no additional packages needed

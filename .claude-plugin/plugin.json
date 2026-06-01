@@ -1,7 +1,8 @@
 {
   "name": "ontology-driven-design",
-  "description": "ODD — Ontology Driven Design. Purpose-driven AI workflows based on Pyramid Thinking (피라미드사고법). Enforces L0-L3 ontology hierarchy across all tasks: code, reports, emails, architecture decisions.",
+  "description": "ODD — Ontology Driven Design. Purpose-governed engineering layer for AI coding agents. Enforces L0-L3 hierarchy, prevents vibe-code drift, and enforces source-of-truth discipline.",
   "version": "1.0.0",
+  "license": "MIT",
   "author": {
     "name": "Hwang Hoe Sun (황회선)",
     "email": "hhoesun@gmail.com"

@@ -54,29 +54,33 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `/skills` | List all available skills and hooks |
 | `/frozen-exe` | Package Python script as standalone EXE |
 
-## Active Hooks (10 hooks, auto-trigger)
+## Active Hooks (15 hooks, auto-trigger)
+<!-- Source of truth: hooks/hooks.json — update this table when hooks.json changes -->
 
 ### PreToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in content |
-| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
-| `assumption_declaration_gate` | Edit/Write/NotebookEdit | Blocks strategy .md files without [가정 명시] |
 | `websearch_yearguard` | WebSearch | Blocks queries without current year |
+| `destructive_bash_gate` | Bash | Blocks dangerous bash commands |
+| `agent_pyramid_gate` | Agent | Requires L0 + role spec for Agent calls |
+| `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
+| `ontology_detach_gate` | Edit/Write/NotebookEdit | Blocks L2 structural file edits without prior ontology-detach |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
 
 ### PostToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
-| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
-| `git_commit_push_check` | Bash | Warns if unpushed commits after git commit |
 | `pptx_validate_hook` | Bash | Validates PPTX layout overflow after build_*_ppt.py |
+| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
 
 ### Stop
 | Hook | Trigger | Effect |
 |------|---------|--------|
+| `tdd_enforce_stop` | Session end | Blocks if code edited without verification (docs exempt) |
 | `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
+| `assumption_declaration_gate` | Session end | Blocks if strategy docs missing [가정 명시] |
 | `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
-| `tdd_enforce_stop` | Session end | Blocks if Edit/Write without verification |
+| `ontology_learning_enforce_stop` | Session end | Blocks if tool error occurred without /ontology-learning |
 
 ## Philosophy
 

@@ -1,0 +1,4 @@
+{"message":{"role":"user","content":[{"type":"text","text":"README 수정해줘"}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"L0: 문서 업데이트\n수정합니다."},{"type":"tool_use","id":"tool_1","name":"Edit","input":{"file_path":"/tmp/README.md","old_string":"old","new_string":"new"}}]}}
+{"message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tool_1","content":[{"type":"text","text":"OK"}]}]}}
+{"message":{"role":"assistant","content":[{"type":"text","text":"README 수정 완료"}]}}

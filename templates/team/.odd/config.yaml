@@ -1,0 +1,31 @@
+# .odd/config.yaml — ODD team 설정
+# 핵심 게이트는 block, 개인 생산성 훅은 warn으로 soft 운영.
+# 대상: 팀 협업 환경 — TDD·온톨로지 학습은 강제하지 않고 경고만
+version: 1
+
+hooks:
+  # ── 구조 게이트 (block) ───────────────────────────────
+  pyramid_ontology_gate: block          # L0 선언 필수
+  ontology_violation_gate: block        # LOCKED 파일 보호
+  destructive_bash_gate: block          # DB 삭제 차단
+  pyramid_guard: block                  # L0 위계 검증
+  git_commit_push_check: block          # 커밋 후 push 누락 경고
+  agent_pyramid_gate: block             # 에이전트 L0 미션 필수
+
+  # ── 소프트 (warn) ─────────────────────────────────────
+  tdd_enforce_stop: warn                # 검증 없는 Edit 경고 (차단 X)
+  ontology_learning_enforce_stop: warn  # 에러 후 학습 미발동 경고
+  assumption_declaration_gate: warn     # 전략 판단 가정 미선언 경고
+  git_push_enforce_stop: warn           # 커밋 후 미push 경고
+
+  # ── 선택적 (off) ─────────────────────────────────────
+  websearch_yearguard: off              # WebSearch 연도 강제 off (팀 재량)
+  pptx_validate_hook: off              # PPTX 빌드 검증 off (선택적)
+  ontology_declare_enforce: off
+  ontology_graph_gate: off
+
+allowlist:
+  paths:
+    - "tests/**"
+    - ".odd/**"
+    - "docs/**"

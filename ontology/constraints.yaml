@@ -1,0 +1,151 @@
+# L0: ODD 거버넌스 제약의 단일 진실원 — hooks와 constraints의 대응 관계 명시
+# L0.2: 외부 감사 도구가 어떤 훅이 어떤 규칙을 강제하는지 기계적으로 쿼리할 수 있도록 한다
+# SSOT: concept-registry.yaml constraints 섹션의 독립 export — 양쪽을 동기화해야 한다
+# ExitCondition: 단일 파일 concept-registry.yaml로 충분한 파싱 도구가 생길 때
+version: "1.0"
+source: "ontology/concept-registry.yaml"
+
+hook_map:
+  # 훅 파일과 constraints ID 간의 공식 대응 테이블
+  - hook_file: "hooks/pyramid_ontology_gate.py"
+    hook_type: "PreToolUse"
+    triggers_on: ["Edit", "Write", "NotebookEdit"]
+    enforces:
+      - odd:C001  # L0 Declaration Required
+    violation_exit_code: 2
+
+  - hook_file: "hooks/pyramid_guard.py"
+    hook_type: "PostToolUse"
+    triggers_on: ["Edit", "Write"]
+    enforces:
+      - odd:C002  # No Tool Binding in L0
+      - odd:C004  # SSOT — No Duplicate Concept Definitions
+    violation_exit_code: 2
+
+  - hook_file: "hooks/ontology_violation_gate.py"
+    hook_type: "PreToolUse"
+    triggers_on: ["Edit", "Write", "NotebookEdit"]
+    enforces: []
+    note: "Reads violation_registry.json — constraints are dynamic, not listed here"
+    violation_exit_code: 2
+
+  - hook_file: "hooks/websearch_yearguard.py"
+    hook_type: "PreToolUse"
+    triggers_on: ["WebSearch"]
+    enforces:
+      - odd:C005  # Year Guard on Web Search
+    violation_exit_code: 2
+
+  - hook_file: "hooks/ontology_declare_enforce.py"
+    hook_type: "Stop"
+    triggers_on: ["session_end"]
+    enforces:
+      - odd:C001  # L0 Declaration Required (session-level)
+    violation_exit_code: 2
+
+  - hook_file: "hooks/tdd_enforce_stop.py"
+    hook_type: "Stop"
+    triggers_on: ["session_end"]
+    enforces: []
+    note: "Enforces test verification after Edit/Write — TDD discipline"
+    violation_exit_code: 2
+
+  - hook_file: "hooks/git_push_enforce_stop.py"
+    hook_type: "Stop"
+    triggers_on: ["session_end"]
+    enforces: []
+    note: "Enforces git push after commit — no unpushed changes at session end"
+    violation_exit_code: 2
+
+constraints:
+  - id: odd:C001
+    label: "L0 Declaration Required"
+    label_ko: "L0 선언 필수"
+    description: >
+      Every edit session must begin with an L0 declaration.
+      An edit without a visible L0 is an edit without direction.
+    description_ko: >
+      모든 편집 세션은 L0 선언으로 시작해야 한다.
+      L0 없는 편집은 방향 없는 편집이다.
+    enforced_by: "pyramid_ontology_gate"
+    hook_file: "hooks/pyramid_ontology_gate.py"
+    trigger: "PreToolUse on Edit/Write/NotebookEdit"
+    violation_exit_code: 2
+    violation_message: "L0 선언 없이 편집 시작 불가"
+    auto_enforced: true
+    severity: "blocking"
+
+  - id: odd:C002
+    label: "No Tool Binding in L0"
+    label_ko: "L0에 도구 바인딩 금지"
+    description: >
+      L0 declarations must not reference specific tools, platforms, or
+      technologies as their primary subject.
+    description_ko: >
+      L0 선언은 특정 도구, 플랫폼, 기술을 주어로 참조하면 안 된다.
+    enforced_by: "pyramid_guard.py"
+    hook_file: "hooks/pyramid_guard.py"
+    trigger: "PostToolUse on Edit/Write"
+    violation_exit_code: 2
+    violation_message: "L0 선언이 도구/플랫폼을 주어로 사용 불가"
+    auto_enforced: true
+    severity: "blocking"
+
+  - id: odd:C003
+    label: "Exit Condition Required for Bindings"
+    label_ko: "바인딩에 교체조건 필수"
+    description: >
+      Every tool/platform binding must declare an exit condition.
+      Undeclared exit conditions are the primary cause of existence-clinging.
+    description_ko: >
+      모든 도구/플랫폼 바인딩은 교체조건을 선언해야 한다.
+      선언되지 않은 교체조건은 존재교착의 주된 원인이다.
+    enforced_by: "ontology-detach skill"
+    hook_file: "skills/ontology-detach.md"
+    trigger: "Manual invocation — not auto-enforced by hook"
+    violation_exit_code: 0
+    violation_message: "바인딩에 교체조건(ExitCondition) 없음"
+    auto_enforced: false
+    severity: "advisory"
+
+  - id: odd:C004
+    label: "SSOT — No Duplicate Concept Definitions"
+    label_ko: "SSOT — 개념 정의 중복 금지"
+    description: >
+      The same concept must not be defined in more than one location.
+      Before adding or modifying a concept definition, grep for existing occurrences.
+    description_ko: >
+      동일 개념은 두 곳 이상에 정의될 수 없다.
+      개념 정의 추가·수정 전 기존 발생을 grep으로 먼저 탐색한다.
+    enforced_by: "pyramid_guard.py"
+    hook_file: "hooks/pyramid_guard.py"
+    trigger: "PostToolUse on Edit/Write"
+    violation_exit_code: 2
+    violation_message: "동일 개념이 2곳 이상에 정의됨 — SSOT 위반"
+    auto_enforced: true
+    severity: "blocking"
+
+  - id: odd:C005
+    label: "Year Guard on Web Search"
+    label_ko: "웹 검색 연도 가드"
+    description: >
+      All web searches must include the current year to prevent stale
+      information from being used in decisions. External information that
+      lacks a verified date must be labeled "미확인:".
+    description_ko: >
+      모든 웹 검색은 정보 기준 연도를 포함해야 한다.
+      날짜가 검증되지 않은 외부 정보는 "미확인:"으로 표기한다.
+    enforced_by: "websearch_yearguard"
+    hook_file: "hooks/websearch_yearguard.py"
+    trigger: "PreToolUse on WebSearch"
+    violation_exit_code: 2
+    violation_message: "연도 없는 웹 검색 차단 — currentDate 연도를 포함할 것"
+    auto_enforced: true
+    severity: "blocking"
+
+enforcement_summary:
+  auto_blocking: ["odd:C001", "odd:C002", "odd:C004", "odd:C005"]
+  advisory_only: ["odd:C003"]
+  session_end_checks: ["odd:C001"]
+  total_constraints: 5
+  total_auto_enforced: 4
