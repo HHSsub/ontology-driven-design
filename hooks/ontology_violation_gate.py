@@ -112,10 +112,21 @@ def apply_rule(rule, filepath, content):
 
         elif check_type == "content_pattern":
             patterns = check.get("patterns", [])
+            # required_alongside: 트리거 패턴이 매칭됐을 때 이 패턴도 파일에 있어야 함
+            # 없으면 차단. "확인 마커 있으면 통과" 구조를 지원
+            required = check.get("required_alongside", [])
             for pat in patterns:
                 try:
-                    m = re.search(pat, content, re.MULTILINE)
+                    m = re.search(pat, content, re.MULTILINE | re.IGNORECASE)
                     if m:
+                        # required_alongside 체크: 하나라도 있으면 통과
+                        if required:
+                            has_required = any(
+                                re.search(r, content, re.MULTILINE | re.IGNORECASE)
+                                for r in required
+                            )
+                            if has_required:
+                                break  # 마커 있음 → 통과
                         matched = m.group(0)[:80].replace("\n", "↵")
                         violations.append({
                             "heading": f"코드 패턴: {matched}",
@@ -147,6 +158,103 @@ def apply_rule(rule, filepath, content):
     return (rule_id, msg)
 
 
+def apply_ps_rule(rule, command):
+    """PowerShell tool 전용 규칙 적용. ps_command_pattern check type만 처리."""
+    if not rule.get("enabled", True):
+        return None
+    has_ps_check = any(c.get("type") == "ps_command_pattern" for c in rule.get("checks", []))
+    if not has_ps_check:
+        return None
+
+    violations = []
+    for check in rule.get("checks", []):
+        if check.get("type") != "ps_command_pattern":
+            continue
+        patterns = check.get("patterns", [])
+        for pat in patterns:
+            try:
+                m = re.search(pat, command, re.IGNORECASE)
+                if m:
+                    matched = m.group(0)[:80].replace("\n", "↵")
+                    violations.append({
+                        "heading": f"PowerShell 명령 패턴: {matched}",
+                        "message": check.get("block_message", "")
+                    })
+                    break
+            except re.error:
+                pass
+
+    if not violations:
+        return None
+
+    rule_id = rule.get("id", "unknown")
+    l0 = rule.get("l0", "")
+    l1 = rule.get("l1_pattern", "")
+
+    msg = "══════════════════════════════════════════════\n"
+    msg += f"❌ Ontology Violation Gate — 규칙: {rule_id}\n"
+    msg += "══════════════════════════════════════════════\n\n"
+    msg += f"L0 원칙: {l0}\n"
+    msg += f"L1 패턴: {l1}\n\n"
+    msg += f"감지된 위반 ({len(violations)}개):\n"
+    for v in violations:
+        msg += f"  패턴: \"{v['heading']}\"\n"
+        if v['message']:
+            msg += f"  → {v['message']}\n"
+        msg += "\n"
+    msg += "══════════════════════════════════════════════"
+    return (rule_id, msg)
+
+
+def apply_bash_rule(rule, command):
+    """Bash tool 전용 규칙 적용. bash_command_pattern check type만 처리."""
+    if not rule.get("enabled", True):
+        return None
+    # bash 규칙은 bash_command_pattern check를 가진 것만
+    has_bash_check = any(c.get("type") == "bash_command_pattern" for c in rule.get("checks", []))
+    if not has_bash_check:
+        return None
+
+    violations = []
+    for check in rule.get("checks", []):
+        if check.get("type") != "bash_command_pattern":
+            continue
+        patterns = check.get("patterns", [])
+        for pat in patterns:
+            try:
+                m = re.search(pat, command, re.IGNORECASE)
+                if m:
+                    matched = m.group(0)[:80].replace("\n", "↵")
+                    violations.append({
+                        "heading": f"Bash 명령 패턴: {matched}",
+                        "message": check.get("block_message", "")
+                    })
+                    break
+            except re.error:
+                pass
+
+    if not violations:
+        return None
+
+    rule_id = rule.get("id", "unknown")
+    l0 = rule.get("l0", "")
+    l1 = rule.get("l1_pattern", "")
+
+    msg = "══════════════════════════════════════════════\n"
+    msg += f"❌ Ontology Violation Gate — 규칙: {rule_id}\n"
+    msg += "══════════════════════════════════════════════\n\n"
+    msg += f"L0 원칙: {l0}\n"
+    msg += f"L1 패턴: {l1}\n\n"
+    msg += f"감지된 위반 ({len(violations)}개):\n"
+    for v in violations:
+        msg += f"  패턴: \"{v['heading']}\"\n"
+        if v['message']:
+            msg += f"  → {v['message']}\n"
+        msg += "\n"
+    msg += "══════════════════════════════════════════════"
+    return (rule_id, msg)
+
+
 def main():
     try:
         raw = sys.stdin.read()
@@ -155,24 +263,41 @@ def main():
         sys.exit(0)
 
     tool_name = data.get("tool_name", "")
-    if tool_name not in ("Write", "Edit", "NotebookEdit"):
-        sys.exit(0)
-
     tool_input = data.get("tool_input", {})
-    filepath = tool_input.get("file_path", "")
-    # Write uses 'content', Edit uses 'new_string'
-    content = tool_input.get("content", "") or tool_input.get("new_string", "")
-
-    if not content or not filepath:
-        sys.exit(0)
-
     registry = load_registry()
     found_violations = []
 
-    for rule in registry.get("rules", []):
-        result = apply_rule(rule, filepath, content)
-        if result:
-            found_violations.append(result)
+    if tool_name in ("Write", "Edit", "NotebookEdit"):
+        filepath = tool_input.get("file_path", "")
+        # Write uses 'content', Edit uses 'new_string'
+        content = tool_input.get("content", "") or tool_input.get("new_string", "")
+        if not content or not filepath:
+            sys.exit(0)
+        for rule in registry.get("rules", []):
+            result = apply_rule(rule, filepath, content)
+            if result:
+                found_violations.append(result)
+
+    elif tool_name == "Bash":
+        command = tool_input.get("command", "")
+        if not command:
+            sys.exit(0)
+        for rule in registry.get("rules", []):
+            result = apply_bash_rule(rule, command)
+            if result:
+                found_violations.append(result)
+
+    elif tool_name == "PowerShell":
+        command = tool_input.get("command", "")
+        if not command:
+            sys.exit(0)
+        for rule in registry.get("rules", []):
+            result = apply_ps_rule(rule, command)
+            if result:
+                found_violations.append(result)
+
+    else:
+        sys.exit(0)
 
     if found_violations:
         for rule_id, msg in found_violations:

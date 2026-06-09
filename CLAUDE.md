@@ -31,28 +31,30 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 
 ## Slash Commands
 
+> **Note:** When installed as a plugin, all commands are namespaced: `/ontology-driven-design:command-name`
+
 ### ODD Core (18 commands)
 
 | Command | Purpose |
 |---------|---------|
-| `/pyramid-ontology` | Declare L0-L3 for this session |
-| `/ontology-detach` | Run de-existence check on bindings |
-| `/ontology-rebuild` | Rebuild topology docs |
-| `/pyramid-label` | Label all code units L0-L3 |
-| `/pyramid-topology` | Scan hierarchy integrity |
-| `/ontology-review-gate` | Ontology court before implementation |
-| `/ontology-learning` | Evolve ontology from mistakes |
-| `/brainstorming` | Design-first before implementation |
-| `/tdd` | Test-driven development cycle |
-| `/debug` | Systematic root-cause debugging |
-| `/plan` | Write implementation plan |
-| `/investigate` | L0-driven deep research |
-| `/careful` | Safety gate for irreversible actions |
-| `/health` | System health check |
-| `/review` | Ontology review of code/docs |
-| `/retro` | Session retrospective + memory evolution |
-| `/skills` | List all available skills and hooks |
-| `/frozen-exe` | Package Python script as standalone EXE |
+| `/ontology-driven-design:pyramid-ontology` | Declare L0-L3 for this session |
+| `/ontology-driven-design:ontology-detach` | Run de-existence check on bindings |
+| `/ontology-driven-design:ontology-rebuild` | Rebuild topology docs |
+| `/ontology-driven-design:pyramid-label` | Label all code units L0-L3 |
+| `/ontology-driven-design:pyramid-topology` | Scan hierarchy integrity |
+| `/ontology-driven-design:ontology-review-gate` | Ontology court before implementation |
+| `/ontology-driven-design:ontology-learning` | Evolve ontology from mistakes |
+| `/ontology-driven-design:brainstorming` | Design-first before implementation |
+| `/ontology-driven-design:tdd` | Test-driven development cycle |
+| `/ontology-driven-design:debug` | Systematic root-cause debugging |
+| `/ontology-driven-design:plan` | Write implementation plan |
+| `/ontology-driven-design:investigate` | L0-driven deep research |
+| `/ontology-driven-design:careful` | Safety gate for irreversible actions |
+| `/ontology-driven-design:health` | System health check |
+| `/ontology-driven-design:review` | Ontology review of code/docs |
+| `/ontology-driven-design:retro` | Session retrospective + memory evolution |
+| `/ontology-driven-design:skills` | List all available skills and hooks |
+| `/ontology-driven-design:frozen-exe` | Package Python script as standalone EXE |
 
 ## Active Hooks (15 hooks, auto-trigger)
 <!-- Source of truth: hooks/hooks.json — update this table when hooks.json changes -->

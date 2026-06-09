@@ -12,3 +12,25 @@ special_advice/
 # ODD 개인 케이스 — 공개 배포 금지
 hooks/violation_registry.personal.json
 hooks/__pycache__/
+
+# 비즈니스 전략 문서 — 절대 공개 금지
+*business_plan*
+*action_plan*
+*marketing_plan*
+*revenue*
+*pricing_strategy*
+*sales_plan*
+*launch_plan*
+*promo_plan*
+*비즈니스*
+*전략*
+*수익*
+*마케팅전략*
+BIZPLAN*
+LAUNCH*
+STRATEGY*
+*.bizplan
+private/
+confidential/
+_private/
+_strategy/

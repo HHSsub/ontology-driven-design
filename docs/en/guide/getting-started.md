@@ -2,19 +2,31 @@
 
 ## Installation
 
-```bash
-# Full name
-claude plugin add HHSsub/ontology-driven-design
+**Step 1 — Add the marketplace** (in a Claude Code session):
 
-# Short alias (identical)
-claude plugin add HHSsub/odd
 ```
+/plugin marketplace add HHSsub/ontology-driven-design
+```
+
+**Step 2 — Install the plugin**:
+
+```
+/plugin install ontology-driven-design@HHSsub/ontology-driven-design
+```
+
+**Step 3 — Reload plugins**:
+
+```
+/reload-plugins
+```
+
+> **Local test without installing:** `claude --plugin-dir ./ontology-driven-design`
 
 ## Basic Workflow
 
 ### 1. Session Start — Declare Purpose
 
-Before any task, invoke `/pyramid-ontology` or declare directly:
+Before any task, invoke `/ontology-driven-design:pyramid-ontology` or declare directly:
 
 ```
 L0: [the business purpose this task must achieve]
@@ -27,7 +39,7 @@ L2: [the feature unit being implemented now]
 When adding hardcoded values or bindings:
 
 ```bash
-/ontology-detach
+/ontology-driven-design:ontology-detach
 ```
 
 Ask yourself: **"What is the exit condition for this binding?"** — If the answer is "none", it's a violation.
@@ -35,7 +47,7 @@ Ask yourself: **"What is the exit condition for this binding?"** — If the answ
 ### 3. Before Refactoring — Hierarchy Check
 
 ```bash
-/pyramid-topology
+/ontology-driven-design:pyramid-topology
 ```
 
 Detects unlabeled units, L0 pollution, and orphan files.
@@ -43,7 +55,7 @@ Detects unlabeled units, L0 pollution, and orphan files.
 ### 4. Before Implementation — Review Gate
 
 ```bash
-/ontology-review-gate
+/ontology-driven-design:ontology-review-gate
 ```
 
 PASS required before writing any code.
@@ -51,7 +63,7 @@ PASS required before writing any code.
 ### 5. After Completion — Update Topology
 
 ```bash
-/ontology-rebuild
+/ontology-driven-design:ontology-rebuild
 ```
 
 Updates ONTOLOGY.md for all folders.

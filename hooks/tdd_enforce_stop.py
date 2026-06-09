@@ -56,13 +56,14 @@ VERIFICATION_PATTERNS = [
     r"\btsc\b.*--noEmit",
     r"tsc\.cmd\b",
     r"\bnode\s+\S+\.js\b",
-    # Web smoke test
-    r"curl\s+.*(?:localhost|127\.0\.0\.1)",
+    # Web smoke test — localhost 또는 배포 URL (https://) 모두 인정
+    r"curl\s+.*(?:localhost|127\.0\.0\.1|https?://)",
     # 기타 언어
     r"\bgo\s+test\b",
     r"\bcargo\s+test\b",
     r"\bmvn\s+test\b",
     r"\bgradle\s+test\b",
+    r"gradlew(?:\.bat)?\s+\S*(?:test|assemble|build)\S*",
     r"\bdotnet\s+test\b",
     r"\brspec\b",
     r"\bjest\b",
@@ -73,7 +74,7 @@ EDIT_TOOLS = {"Edit", "Write", "NotebookEdit"}
 SHELL_TOOLS = {"Bash", "PowerShell"}
 
 # 문서/설정 파일은 TDD 검증 대상 아님 — 테스트 명령으로 "맞게 썼는지" 검증 불가
-DOC_EXTENSIONS = {".md", ".txt", ".rst", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg"}
+DOC_EXTENSIONS = {".md", ".txt", ".rst", ".json", ".yaml", ".yml", ".toml", ".ini", ".cfg", ""}
 
 
 def _extract_cmd(tool_name: str, inp: dict) -> str:
