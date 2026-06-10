@@ -33,14 +33,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pyramid_ontology_gate.py\""
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ontology_detach_gate.py\""
-          },
-          {
-            "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ontology_violation_gate.py\""
           }
         ]
@@ -61,7 +53,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/pyramid_guard.py\""
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/context_complexity_gate.py\""
           }
         ]
       }
@@ -70,14 +62,6 @@
       {
         "type": "command",
         "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/tdd_enforce_stop.py\""
-      },
-      {
-        "type": "command",
-        "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/ontology_declare_enforce.py\""
-      },
-      {
-        "type": "command",
-        "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/assumption_declaration_gate.py\""
       },
       {
         "type": "command",

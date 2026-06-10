@@ -5,8 +5,11 @@ import sys
 import json
 import re
 import os
+import tempfile
+from datetime import datetime, timezone
 
 REGISTRY_PATH = os.path.join(os.path.dirname(__file__), "violation_registry.json")
+STATS_PATH = os.path.join(os.path.dirname(__file__), "violation_stats.json")
 
 
 def load_registry():
@@ -17,6 +20,49 @@ def load_registry():
         # 레지스트리 읽기 실패 시 통과 (게이트 자체가 장애가 되면 안 됨)
         print(f"[ontology_violation_gate] registry load failed: {e}", file=sys.stderr)
         return {"rules": []}
+
+
+def record_trigger(rule_ids):
+    """규칙 발동 시 violation_stats.json에 횟수·시각·daily 카운트 기록 (atomic write)."""
+    if not rule_ids:
+        return
+    try:
+        if os.path.exists(STATS_PATH):
+            with open(STATS_PATH, encoding="utf-8") as f:
+                stats = json.load(f)
+        else:
+            stats = {}
+        now = datetime.now(timezone.utc).isoformat()
+        today = datetime.now(timezone.utc).date().isoformat()
+        for rid in rule_ids:
+            entry = stats.get(rid, {
+                "trigger_count": 0,
+                "last_triggered": None,
+                "recent_count": 0,
+                "recent_date": today
+            })
+            entry["trigger_count"] = entry.get("trigger_count", 0) + 1
+            entry["last_triggered"] = now
+            if entry.get("recent_date") == today:
+                entry["recent_count"] = entry.get("recent_count", 0) + 1
+            else:
+                entry["recent_count"] = 1
+                entry["recent_date"] = today
+            stats[rid] = entry
+        # atomic write: temp 파일 쓰고 rename
+        dir_ = os.path.dirname(STATS_PATH)
+        fd, tmp = tempfile.mkstemp(dir=dir_, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(stats, f, ensure_ascii=False, indent=2)
+            os.replace(tmp, STATS_PATH)
+        except Exception:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[ontology_violation_gate] stats write failed: {e}", file=sys.stderr)
 
 
 def matches_file_filter(filepath, file_filter):
@@ -135,6 +181,21 @@ def apply_rule(rule, filepath, content):
                         break
                 except re.error:
                     pass
+
+        elif check_type == "file_path_pattern":
+            patterns = check.get("patterns", [])
+            filename = os.path.basename(filepath) if filepath else ""
+            if filename:
+                for pat in patterns:
+                    try:
+                        if re.search(pat, filename, re.IGNORECASE):
+                            violations.append({
+                                "heading": f"파일명: {filename}",
+                                "message": check.get("block_message", "")
+                            })
+                            break
+                    except re.error:
+                        pass
 
     if not violations:
         return None
@@ -300,8 +361,37 @@ def main():
         sys.exit(0)
 
     if found_violations:
+        triggered_ids = [rule_id for rule_id, _ in found_violations]
+
+        # L1 에스컬레이션 감지: 오늘 이미 2회+ 발동된 규칙이 또 발동하면 경고
+        today = datetime.now(timezone.utc).date().isoformat()
+        escalation_parts = []
+        try:
+            if os.path.exists(STATS_PATH):
+                with open(STATS_PATH, encoding="utf-8") as _sf:
+                    current_stats = json.load(_sf)
+                for rid in triggered_ids:
+                    entry = current_stats.get(rid, {})
+                    if entry.get("recent_date") == today and entry.get("recent_count", 0) >= 2:
+                        escalation_parts.append(
+                            f"  [{rid}]: 오늘 {entry['recent_count'] + 1}번째 발동"
+                        )
+        except Exception:
+            pass
+
+        record_trigger(triggered_ids)
         for rule_id, msg in found_violations:
             print(msg)
+
+        if escalation_parts:
+            print(
+                "\n🔴 L1 에스컬레이션 경고\n"
+                "동일 규칙이 반복 발동됩니다:\n" +
+                "\n".join(escalation_parts) + "\n\n"
+                "L2 세부 패칭을 중단하고 L1 세계관 재검토가 필요합니다.\n"
+                "→ /ontology-driven-design:ontology-learning 실행"
+            )
+
         sys.exit(2)  # exit(2) = Claude Code block signal (exit(1) treated as error, not block)
 
     sys.exit(0)
