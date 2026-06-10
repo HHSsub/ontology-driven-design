@@ -1,11 +1,11 @@
 """
 Stop 훅 — 불순종(ontology-learning 미발동) 강제 차단
 
-L0: 실수/불이행 후 ontology-learning을 즉시 발동하지 않는 것은 불순종이다.
-L1: 실제 도구 실행 실패(is_error:true) 탐지 → ontology-learning 발동 여부 확인 → 없으면 차단
-L2: transcript에서 tool_result is_error:true 탐지 → 이후 Skill(ontology-learning) 미발동 → exit 2
-    실패 구조 = tool_result is_error:true 한정 (user_count 휴리스틱 제거 — 일반 대화도 차단하던 오탐 원인)
-L3: JSONL transcript 파싱, is_error 필드 기반 탐지
+L0: 설계/판단 실수 후 ontology-learning을 즉시 발동하지 않는 것은 불순종이다.
+L1: 비터미널 도구 실행 실패(is_error:true) 탐지 → ontology-learning 발동 여부 확인 → 없으면 차단
+L2: Bash/PowerShell is_error = 터미널 오류 → 즉시 재시도 대상, ontology-learning 불필요
+    Write/Edit/Agent is_error = 설계 실수 가능 → ontology-learning 필수
+L3: tool_use_id → tool_name 맵 구축, TERMINAL_TOOLS 오류 제외
 """
 from __future__ import annotations
 
@@ -15,13 +15,56 @@ from pathlib import Path
 
 LOOKBACK = 40
 
+# 터미널 도구 오류는 ontology-learning 불필요 — 즉시 재시도로 해결
+TERMINAL_TOOLS = {"Bash", "PowerShell"}
 
-def _is_tool_error(content: list) -> bool:
-    """tool_result에 is_error:true 탐지."""
+_HOOK_BLOCK_SIGNATURES = (
+    "══════════════",   # ODD hook common separator — hook block = normal operation
+    "hook error",       # Claude Code hook error message — hook fired = ODD working
+    "PreToolUse:",      # Claude Code hook block prefix
+    "PostToolUse:",     # Claude Code hook block prefix
+)
+
+
+def _is_hook_block_content(block: dict) -> bool:
+    content = block.get("content", "")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        text = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
+    else:
+        text = ""
+    return any(sig in text for sig in _HOOK_BLOCK_SIGNATURES)
+
+
+def _build_tool_name_map(messages: list) -> dict:
+    """tool_use_id → tool_name 맵 구축 (assistant 메시지 기반)."""
+    result = {}
+    for msg in messages:
+        if msg.get("role") != "assistant":
+            continue
+        for block in msg.get("content", []):
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                tid = block.get("id", "")
+                name = block.get("name", "")
+                if tid and name:
+                    result[tid] = name
+    return result
+
+
+def _is_design_error(content: list, tool_name_map: dict) -> bool:
+    """tool_result에 is_error:true 탐지 — ODD 훅 차단 + 터미널 도구 오류 제외."""
     for block in content:
         if not isinstance(block, dict):
             continue
         if block.get("type") == "tool_result" and block.get("is_error"):
+            if _is_hook_block_content(block):
+                continue  # ODD 훅 차단 = 정상 작동, 실수 아님
+            # 터미널 도구 오류 제외 (Bash, PowerShell) — 명령어 수정으로 해결, ontology-learning 불필요
+            tid = block.get("tool_use_id", "")
+            tool_name = tool_name_map.get(tid, "")
+            if tool_name in TERMINAL_TOOLS:
+                continue
             return True
     return False
 
@@ -74,11 +117,14 @@ def main() -> int:
 
     recent = messages[-LOOKBACK:]
 
-    # 실패 신호: tool_result is_error:true 한정
-    # user_count >= 3 휴리스틱 제거 — 일반 대화(질문 3회 이상)도 차단하는 false positive 원인
+    # tool_use_id → tool_name 맵 구축 (최근 40개 메시지 기반)
+    tool_name_map = _build_tool_name_map(recent)
+
+    # 설계 실수 신호: 비터미널 도구 is_error:true 한정
+    # Bash/PowerShell 오류 제외 — 터미널 오류는 즉시 재시도, ontology-learning 불필요
     failure_idx = -1
     for i, msg in enumerate(recent):
-        if msg["role"] == "user" and _is_tool_error(msg["content"]):
+        if msg["role"] == "user" and _is_design_error(msg["content"], tool_name_map):
             failure_idx = i
 
     if failure_idx < 0:
