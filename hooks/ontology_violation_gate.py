@@ -102,7 +102,10 @@ def record_trigger(rule_ids):
             except Exception:
                 pass
     except Exception as e:
-        print(f"[ontology_violation_gate] stats write failed: {e}", file=sys.stderr)
+        try:
+            os.write(2, f"[ontology_violation_gate] stats write failed: {e}\n".encode("ascii", errors="replace"))
+        except Exception:
+            pass
 
 
 def matches_file_filter(filepath, file_filter):
@@ -356,7 +359,7 @@ def apply_bash_rule(rule, command):
     return (rule_id, msg)
 
 
-def main():
+def _main():
     try:
         raw = sys.stdin.read()
         data = json.loads(raw)
@@ -421,21 +424,23 @@ def main():
             pass
 
         record_trigger(triggered_ids)
+        out_parts = []
         for rule_id, msg in found_violations:
-            sys.stdout.buffer.write((msg + "\n").encode("utf-8", errors="replace"))
-        sys.stdout.buffer.flush()
+            out_parts.append(msg)
 
         if escalation_parts:
-            esc_msg = (
+            out_parts.append(
                 "\n🔴 L1 에스컬레이션 경고 — 세션 종료 차단 예약됨\n"
                 "동일 규칙이 반복 발동됩니다:\n" +
                 "\n".join(escalation_parts) + "\n\n"
                 "L2 세부 패칭을 중단하고 L1 세계관 재검토가 필요합니다.\n"
                 "→ /ontology-driven-design:ontology-learning 실행 전까지 세션 종료 차단"
             )
-            sys.stdout.buffer.write((esc_msg + "\n").encode("utf-8", errors="replace"))
-            sys.stdout.buffer.flush()
-            # escalation_pending.json 플래그 기록 → Stop 훅이 ontology-learning 미실행 시 차단
+
+        os.write(1, "\n".join(out_parts).encode("utf-8", errors="replace"))
+
+        # escalation_pending.json 플래그 기록 → Stop 훅이 ontology-learning 미실행 시 차단
+        if escalation_parts:
             try:
                 flag = {
                     "written_at": datetime.now(timezone.utc).isoformat(),
@@ -458,6 +463,17 @@ def main():
         sys.exit(2)  # exit(2) = Claude Code block signal (exit(1) treated as error, not block)
 
     sys.exit(0)
+
+
+def main():
+    try:
+        _main()
+    except Exception as e:
+        try:
+            os.write(2, f"[gate crash] {type(e).__name__}: {e}\n".encode("ascii", errors="replace"))
+        except Exception:
+            pass
+        sys.exit(0)  # fail open — 게이트 자체 crash는 통과
 
 
 if __name__ == "__main__":
