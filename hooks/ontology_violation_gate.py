@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 
 REGISTRY_PATH = os.path.join(os.path.dirname(__file__), "violation_registry.json")
 STATS_PATH = os.path.join(os.path.dirname(__file__), "violation_stats.json")
+ESCALATION_FLAG_PATH = os.path.join(os.path.dirname(__file__), "escalation_pending.json")
 
 
 def load_registry():
@@ -20,6 +21,43 @@ def load_registry():
         # 레지스트리 읽기 실패 시 통과 (게이트 자체가 장애가 되면 안 됨)
         print(f"[ontology_violation_gate] registry load failed: {e}", file=sys.stderr)
         return {"rules": []}
+
+
+def register_rules(registry):
+    """모든 활성 규칙을 violation_stats.json에 added_date와 함께 등록 (첫 발동 전에 존재 추적 시작)."""
+    try:
+        if os.path.exists(STATS_PATH):
+            with open(STATS_PATH, encoding="utf-8") as f:
+                stats = json.load(f)
+        else:
+            stats = {}
+        today = datetime.now(timezone.utc).date().isoformat()
+        changed = False
+        for rule in registry.get("rules", []):
+            rid = rule.get("id", "")
+            if rid and rid not in stats:
+                stats[rid] = {
+                    "trigger_count": 0,
+                    "last_triggered": None,
+                    "recent_count": 0,
+                    "recent_date": today,
+                    "added_date": today
+                }
+                changed = True
+        if changed:
+            dir_ = os.path.dirname(STATS_PATH)
+            fd, tmp = tempfile.mkstemp(dir=dir_, suffix=".tmp")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    json.dump(stats, f, ensure_ascii=False, indent=2)
+                os.replace(tmp, STATS_PATH)
+            except Exception:
+                try:
+                    os.unlink(tmp)
+                except Exception:
+                    pass
+    except Exception as e:
+        print(f"[ontology_violation_gate] stats register failed: {e}", file=sys.stderr)
 
 
 def record_trigger(rule_ids):
@@ -39,7 +77,8 @@ def record_trigger(rule_ids):
                 "trigger_count": 0,
                 "last_triggered": None,
                 "recent_count": 0,
-                "recent_date": today
+                "recent_date": today,
+                "added_date": today
             })
             entry["trigger_count"] = entry.get("trigger_count", 0) + 1
             entry["last_triggered"] = now
@@ -159,20 +198,18 @@ def apply_rule(rule, filepath, content):
         elif check_type == "content_pattern":
             patterns = check.get("patterns", [])
             # required_alongside: 트리거 패턴이 매칭됐을 때 이 패턴도 파일에 있어야 함
-            # 없으면 차단. "확인 마커 있으면 통과" 구조를 지원
             required = check.get("required_alongside", [])
             for pat in patterns:
                 try:
                     m = re.search(pat, content, re.MULTILINE | re.IGNORECASE)
                     if m:
-                        # required_alongside 체크: 하나라도 있으면 통과
                         if required:
                             has_required = any(
                                 re.search(r, content, re.MULTILINE | re.IGNORECASE)
                                 for r in required
                             )
                             if has_required:
-                                break  # 마커 있음 → 통과
+                                break
                         matched = m.group(0)[:80].replace("\n", "↵")
                         violations.append({
                             "heading": f"코드 패턴: {matched}",
@@ -271,7 +308,6 @@ def apply_bash_rule(rule, command):
     """Bash tool 전용 규칙 적용. bash_command_pattern check type만 처리."""
     if not rule.get("enabled", True):
         return None
-    # bash 규칙은 bash_command_pattern check를 가진 것만
     has_bash_check = any(c.get("type") == "bash_command_pattern" for c in rule.get("checks", []))
     if not has_bash_check:
         return None
@@ -326,6 +362,7 @@ def main():
     tool_name = data.get("tool_name", "")
     tool_input = data.get("tool_input", {})
     registry = load_registry()
+    register_rules(registry)  # 모든 규칙을 stats에 등록 (added_date 추적 시작)
     found_violations = []
 
     if tool_name in ("Write", "Edit", "NotebookEdit"):
@@ -385,12 +422,31 @@ def main():
 
         if escalation_parts:
             print(
-                "\n🔴 L1 에스컬레이션 경고\n"
+                "\n🔴 L1 에스컬레이션 경고 — 세션 종료 차단 예약됨\n"
                 "동일 규칙이 반복 발동됩니다:\n" +
                 "\n".join(escalation_parts) + "\n\n"
                 "L2 세부 패칭을 중단하고 L1 세계관 재검토가 필요합니다.\n"
-                "→ /ontology-driven-design:ontology-learning 실행"
+                "→ /ontology-driven-design:ontology-learning 실행 전까지 세션 종료 차단"
             )
+            # escalation_pending.json 플래그 기록 → Stop 훅이 ontology-learning 미실행 시 차단
+            try:
+                flag = {
+                    "written_at": datetime.now(timezone.utc).isoformat(),
+                    "rule_ids": escalation_parts
+                }
+                dir_ = os.path.dirname(ESCALATION_FLAG_PATH)
+                fd, tmp = tempfile.mkstemp(dir=dir_, suffix=".tmp")
+                try:
+                    with os.fdopen(fd, "w", encoding="utf-8") as f:
+                        json.dump(flag, f, ensure_ascii=False)
+                    os.replace(tmp, ESCALATION_FLAG_PATH)
+                except Exception:
+                    try:
+                        os.unlink(tmp)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
         sys.exit(2)  # exit(2) = Claude Code block signal (exit(1) treated as error, not block)
 
