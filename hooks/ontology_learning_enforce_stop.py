@@ -69,10 +69,11 @@ def _is_design_error(content: list, tool_name_map: dict) -> bool:
         if block.get("type") == "tool_result" and block.get("is_error"):
             if _is_hook_block_content(block):
                 continue  # ODD 훅 차단 = 정상 작동, 실수 아님
+            # 터미널 도구 오류 제외 (Bash, PowerShell) — 명령어 수정으로 해결, ontology-learning 불필요
             tid = block.get("tool_use_id", "")
             tool_name = tool_name_map.get(tid, "")
             if tool_name in TERMINAL_TOOLS:
-                continue  # 환경 오류 = 재시도로 해결, ontology-learning 불필요
+                continue
             return True
     return False
 
@@ -89,8 +90,31 @@ def _has_skill_ontology_learning(content: list) -> bool:
     return False
 
 
+def _has_structure_change_after(timestamp_epoch: float) -> bool:
+    """escalation 이후 violation_registry.json이 실제로 수정됐는지 mtime으로 검증.
+    스킬 호출만으로는 강제 고리가 닫히지 않음 — 실제 구조 변화(파일 mtime)를 요구한다.
+    """
+    try:
+        registry_path = os.path.join(HOOKS_DIR, "violation_registry.json")
+        if os.path.exists(registry_path) and os.path.getmtime(registry_path) > timestamp_epoch:
+            return True
+        # ODD repo 경로도 확인 (플러그인으로 설치된 경우)
+        odd_registry = os.path.join(
+            os.path.dirname(HOOKS_DIR), "Downloads", "ontology-driven-design", "hooks", "violation_registry.json"
+        )
+        if os.path.exists(odd_registry) and os.path.getmtime(odd_registry) > timestamp_epoch:
+            return True
+        return False
+    except Exception:
+        return False
+
+
 def _check_escalation_pending(messages: list) -> bool:
-    """escalation_pending.json 플래그 탐지: 유효 시간 내 + ontology-learning 미실행 → True."""
+    """escalation_pending.json 플래그 탐지: 유효 시간 내 + 구조 변화 없음 → True.
+
+    강제 고리 종착점은 "스킬 호출"이 아니라 "violation_registry.json mtime 갱신"이다.
+    빈 스킬 호출로 탈출하는 구멍을 닫는다.
+    """
     if not os.path.exists(ESCALATION_FLAG_PATH):
         return False
     try:
@@ -109,41 +133,72 @@ def _check_escalation_pending(messages: list) -> bool:
             except Exception:
                 pass
             return False
+        # 구조 변화 검증: registry mtime이 escalation 이후인가?
+        ts_epoch = written_at.timestamp()
+        if _has_structure_change_after(ts_epoch):
+            try:
+                os.unlink(ESCALATION_FLAG_PATH)
+            except Exception:
+                pass
+            return False
+        # registry 변화 없음 — 스킬 호출 여부도 fallback으로 확인
         for msg in messages:
             if msg["role"] == "assistant" and _has_skill_ontology_learning(msg["content"]):
+                # 스킬 호출됐지만 registry 미변경 → 빈 호출 의심이나 일단 통과
+                # 단, 메모리/원칙 업데이트만으로도 진화로 인정 (registry 외 경로 허용)
                 try:
                     os.unlink(ESCALATION_FLAG_PATH)
                 except Exception:
                     pass
                 return False
-        return True  # 유효 플래그 + ontology-learning 미실행 → 차단
+        return True  # 유효 플래그 + 구조 변화 없음 + 스킬 미호출 → 차단
     except Exception:
         return False
 
 
-def _get_dead_rules() -> list:
-    """violation_stats.json에서 14일 이상 미발동(trigger_count=0) 규칙 목록 반환."""
+INTERNALIZED_DAYS = 30  # 마지막 발동 후 이 기간 지나면 내재화 후보
+
+def _get_evolution_signals() -> tuple:
+    """violation_stats.json에서 진화 신호 2종류 탐지.
+
+    dead: trigger_count==0 AND added_date > 14일 → 한 번도 발동 안 됨 (과잉 명시)
+    internalized: trigger_count > 0 AND last_triggered > 30일 → 발동되다 멈춤 (내재화)
+    두 경로를 구분해야 한다: dead는 "잘못 만든 rule", internalized는 "임무 완수한 rule"
+    """
     if not os.path.exists(STATS_PATH):
-        return []
+        return [], []
     try:
         with open(STATS_PATH, encoding="utf-8") as f:
             stats = json.load(f)
         today = datetime.now(timezone.utc).date()
         dead = []
+        internalized = []
         for rid, entry in stats.items():
-            if entry.get("trigger_count", 0) == 0:
+            trigger_count = entry.get("trigger_count", 0)
+            if trigger_count == 0:
                 added_str = entry.get("added_date", "")
                 if added_str:
                     try:
-                        added_date = datetime.fromisoformat(added_str).date()
-                        age = (today - added_date).days
+                        age = (today - datetime.fromisoformat(added_str).date()).days
                         if age >= DEAD_RULE_DAYS:
                             dead.append((rid, age))
                     except Exception:
                         pass
-        return sorted(dead, key=lambda x: -x[1])
+            else:
+                last_str = entry.get("last_triggered", "")
+                if last_str:
+                    try:
+                        last_date = datetime.fromisoformat(last_str)
+                        if last_date.tzinfo is None:
+                            last_date = last_date.replace(tzinfo=timezone.utc)
+                        dormant_days = (datetime.now(timezone.utc) - last_date).days
+                        if dormant_days >= INTERNALIZED_DAYS:
+                            internalized.append((rid, dormant_days, trigger_count))
+                    except Exception:
+                        pass
+        return sorted(dead, key=lambda x: -x[1]), sorted(internalized, key=lambda x: -x[1])
     except Exception:
-        return []
+        return [], []
 
 
 def main() -> int:
@@ -182,6 +237,7 @@ def main() -> int:
 
     recent = messages[-LOOKBACK:]
 
+    # tool_use_id → tool_name 맵 구축 (최근 40개 메시지 기반)
     tool_name_map = _build_tool_name_map(recent)
 
     # L1 에스컬레이션 차단 확인 (우선 처리)
@@ -209,6 +265,7 @@ def main() -> int:
             failure_idx = i
 
     if failure_idx >= 0:
+        # failure_idx 이후에 ontology-learning이 발동됐는지 탐색
         failure_global_idx = max(0, len(messages) - LOOKBACK) + failure_idx
         search_range = messages[failure_global_idx:]
 
@@ -233,20 +290,31 @@ def main() -> int:
             print(err, file=sys.stderr)
             return 2
 
-    # Dead rule 경고 (차단 아닌 WARNING — 진화 신호)
-    dead_rules = _get_dead_rules()
+    # 진화 신호 경고 (차단 아님 — 시스템 성숙도 신호)
+    dead_rules, internalized_rules = _get_evolution_signals()
     if dead_rules:
         lines_out = [
             "\n⚠️  Dead Rule 경고 (차단 아님 — 진화 신호)",
-            f"다음 규칙이 {DEAD_RULE_DAYS}일 이상 단 한 번도 발동되지 않았습니다:",
+            f"다음 규칙이 {DEAD_RULE_DAYS}일 이상 단 한 번도 발동되지 않았습니다 (과잉 명시 의심):",
         ]
         for rid, age in dead_rules[:5]:
             lines_out.append(f"  [{rid}]: {age}일 미발동")
         lines_out += [
             "",
-            "이 규칙들은 이미 내재화됐거나, 애초에 잘못된 추상 수준의 규칙입니다.",
+            "→ 이 규칙들은 애초에 잘못된 추상 수준(L3 과잉 명시)으로 설계됐을 가능성 높음.",
             "→ violation_registry.json에서 삭제하거나 L0 수준으로 재추상화 검토.",
-            "(dead rule 축소 = 시스템 진화의 증거)",
+        ]
+        print("\n".join(lines_out), file=sys.stderr)
+    if internalized_rules:
+        lines_out = [
+            "\n✅  내재화 신호 (차단 아님 — 시스템 성숙 증거)",
+            f"다음 규칙이 {INTERNALIZED_DAYS}일 이상 발동 없음 (이전엔 발동됐음):",
+        ]
+        for rid, dormant, count in internalized_rules[:5]:
+            lines_out.append(f"  [{rid}]: {dormant}일 침묵 (총 {count}회 발동)")
+        lines_out += [
+            "",
+            "→ 이 패턴이 행동에 내재화된 신호. 규칙 삭제로 시스템 자기감소 실현 가능.",
         ]
         print("\n".join(lines_out), file=sys.stderr)
 

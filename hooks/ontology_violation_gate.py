@@ -19,7 +19,8 @@ def load_registry():
             return json.load(f)
     except Exception as e:
         # 레지스트리 읽기 실패 시 통과 (게이트 자체가 장애가 되면 안 됨)
-        print(f"[ontology_violation_gate] registry load failed: {e}", file=sys.stderr)
+        sys.stderr.buffer.write(f"[ontology_violation_gate] registry load failed: {e}\n".encode("utf-8", errors="replace"))
+        sys.stderr.buffer.flush()
         return {"rules": []}
 
 
@@ -198,18 +199,20 @@ def apply_rule(rule, filepath, content):
         elif check_type == "content_pattern":
             patterns = check.get("patterns", [])
             # required_alongside: 트리거 패턴이 매칭됐을 때 이 패턴도 파일에 있어야 함
+            # 없으면 차단. "확인 마커 있으면 통과" 구조를 지원
             required = check.get("required_alongside", [])
             for pat in patterns:
                 try:
                     m = re.search(pat, content, re.MULTILINE | re.IGNORECASE)
                     if m:
+                        # required_alongside 체크: 하나라도 있으면 통과
                         if required:
                             has_required = any(
                                 re.search(r, content, re.MULTILINE | re.IGNORECASE)
                                 for r in required
                             )
                             if has_required:
-                                break
+                                break  # 마커 있음 → 통과
                         matched = m.group(0)[:80].replace("\n", "↵")
                         violations.append({
                             "heading": f"코드 패턴: {matched}",
@@ -308,6 +311,7 @@ def apply_bash_rule(rule, command):
     """Bash tool 전용 규칙 적용. bash_command_pattern check type만 처리."""
     if not rule.get("enabled", True):
         return None
+    # bash 규칙은 bash_command_pattern check를 가진 것만
     has_bash_check = any(c.get("type") == "bash_command_pattern" for c in rule.get("checks", []))
     if not has_bash_check:
         return None
@@ -418,16 +422,19 @@ def main():
 
         record_trigger(triggered_ids)
         for rule_id, msg in found_violations:
-            print(msg)
+            sys.stdout.buffer.write((msg + "\n").encode("utf-8", errors="replace"))
+        sys.stdout.buffer.flush()
 
         if escalation_parts:
-            print(
+            esc_msg = (
                 "\n🔴 L1 에스컬레이션 경고 — 세션 종료 차단 예약됨\n"
                 "동일 규칙이 반복 발동됩니다:\n" +
                 "\n".join(escalation_parts) + "\n\n"
                 "L2 세부 패칭을 중단하고 L1 세계관 재검토가 필요합니다.\n"
                 "→ /ontology-driven-design:ontology-learning 실행 전까지 세션 종료 차단"
             )
+            sys.stdout.buffer.write((esc_msg + "\n").encode("utf-8", errors="replace"))
+            sys.stdout.buffer.flush()
             # escalation_pending.json 플래그 기록 → Stop 훅이 ontology-learning 미실행 시 차단
             try:
                 flag = {
