@@ -61,6 +61,66 @@ def check_internal_terminology(content: str, graph: dict) -> list[str]:
     return found
 
 
+def _find_index_root(file_path: str) -> Path | None:
+    """파일에서 상위로 올라가며 .odd/ontology_index.json 보유 프로젝트 루트 탐색 (최대 8단계)."""
+    try:
+        p = Path(file_path).resolve().parent
+    except Exception:
+        return None
+    for _ in range(8):
+        if (p / ".odd" / "ontology_index.json").exists():
+            return p
+        if p.parent == p:
+            break
+        p = p.parent
+    return None
+
+
+def _closure_check(file_path: str, transcript_path: str):
+    """L0 폐쇄 강제: 다중 파일 목적 그룹의 일원을 수정하기 전,
+    이 세션에서 ontology_grep으로 그 그룹을 한 번은 나열했어야 한다.
+
+    L0: L0 변경의 변경 범위는 지시문이 아니라 의존 그래프가 결정한다.
+    인덱스 없는 프로젝트는 통과 — 라벨 생산은 pyramid_guard가, 인덱스는 ontology_grep이 만든다.
+    """
+    root = _find_index_root(file_path)
+    if root is None:
+        return None
+    try:
+        idx = json.loads((root / ".odd" / "ontology_index.json").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    try:
+        rel = os.path.relpath(str(Path(file_path).resolve()), str(root)).replace("\\", "/")
+    except Exception:
+        return None
+    info = idx.get("files", {}).get(rel)
+    if not info:
+        return None
+    purposes = [n.get("purpose", "") for n in info.get("nodes", []) if n.get("level", "").startswith("L0")]
+    shared = None
+    for purpose in purposes:
+        count = sum(
+            1
+            for other in idx.get("files", {}).values()
+            for n in other.get("nodes", [])
+            if n.get("purpose") == purpose
+        )
+        if count >= 2:
+            shared = (purpose, count)
+            break
+    if not shared:
+        return None
+    # 세션 내 폐쇄 질의 실행 증거 (transcript에 ontology_grep 호출 흔적)
+    if transcript_path and Path(transcript_path).exists():
+        try:
+            if "ontology_grep" in Path(transcript_path).read_text(encoding="utf-8", errors="ignore"):
+                return None
+        except Exception:
+            return None
+    return (shared[0], shared[1], str(root))
+
+
 def main() -> int:
     try:
         raw = sys.stdin.read()
@@ -80,17 +140,37 @@ def main() -> int:
     if not file_path:
         return 0
 
+    issues = []
+
+    # ━━ L0 폐쇄 미확인 수정 차단 ━━
+    cv = _closure_check(file_path, data.get("transcript_path", ""))
+    if cv:
+        purpose, count, idx_root = cv
+        safe_kw = purpose.replace('"', "")[:30]
+        issues.append({
+            "seed": "ssot_single_truth",
+            "message": (
+                f"목적 그룹 폐쇄 미확인 수정\n\n"
+                f"파일: {Path(file_path).name}\n"
+                f"이 파일의 L0 '{purpose[:60]}'를 공유하는 파일이 {count}개입니다.\n"
+                f"이 세션에서 종속 폐쇄를 나열한 적이 없습니다.\n\n"
+                f"변경 범위는 지시문이 아니라 의존 그래프가 결정합니다. 먼저 실행:\n"
+                f"  python C:/Users/User/.claude/hooks/ontology_grep.py \"{safe_kw}\" --root \"{idx_root}\"\n\n"
+                f"→ 폐쇄 목록 전체를 확인·재판정한 후 수정을 재시도하면 이 게이트는 통과됩니다."
+            )
+        })
+
     graph = load_graph()
     node = match_file_node(graph, file_path)
 
-    if not node:
+    if not node and not issues:
         return 0  # 의미 컨텍스트 없음 → 다른 훅에 위임
+    if not node:
+        node = {}
 
     seed = node.get("seeds", [])
     write_check = node.get("write_check", "")
     modifiable = node.get("modifiable", True)
-
-    issues = []
 
     # ━━ 불변 파일 쓰기 차단 ━━
     if modifiable is False:

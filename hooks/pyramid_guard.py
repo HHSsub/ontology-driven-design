@@ -285,7 +285,14 @@ EXEMPT_NAMES = {
     "tailwind.config.js", "tailwind.config.ts",
     "next.config.js", "next.config.ts",
     "dockerfile", "docker-compose.yml", "docker-compose.yaml",
+    # 메타 레이어: 온톨로지 시스템 자신과 고정 포맷 문서는 L 선언 대상이 아님
+    "claude.md", "memory.md", "readme.md", "license", "license.md", "changelog.md",
+    "settings.json", "settings.local.json",
 }
+# 데이터/설정 포맷: 주석 불가하거나 포맷이 외부 고정 — L 선언 강제 부적합
+EXEMPT_DATA_SUFFIXES = {".json", ".yaml", ".yml", ".toml", ".csv", ".txt", ".lock"}
+# 메모리 파일 규약 (frontmatter 고정 포맷)
+EXEMPT_NAME_PREFIXES = ("feedback_", "reference_", "project_")
 MIN_LINES_FOR_CHECK = 15
 HEADER_LINES = 20
 
@@ -294,11 +301,15 @@ def is_exempt(path: Path) -> bool:
     name_lower = path.name.lower()
     if name_lower in EXEMPT_NAMES:
         return True
+    if name_lower.startswith(EXEMPT_NAME_PREFIXES):
+        return True
     if name_lower == "__init__.py":
         try:
             return path.stat().st_size < 200
         except Exception:
             return True
+    if any(name_lower.endswith(s) for s in EXEMPT_DATA_SUFFIXES):
+        return True
     return any(name_lower.endswith(s) for s in EXEMPT_SUFFIXES)
 
 

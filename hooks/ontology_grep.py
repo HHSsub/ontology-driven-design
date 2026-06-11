@@ -157,9 +157,35 @@ def main():
             print(f"      └ {reason}")
     if hits:
         print(f"\n→ 이 {len(hits)}개가 변경 범위다. 지시문에 언급된 항목만 수정하는 것 = scope 위반.")
+        return 0
+
+    # ━━ 자가 치유 폴백: 라벨 부재/키워드 불일치여도 데드엔드 금지 ━━
+    # 원시 텍스트 스캔으로 후보 폐쇄를 제시하고, 정식 그래프 구축 경로를 지시한다.
+    q = args.query.lower()
+    labeled = len(idx["files"])
+    print(f"\n→ L0 주석 매칭 없음 (인덱싱된 라벨 파일: {labeled}개) — 텍스트 폴백 스캔 시작:")
+    cands = []
+    for p in _iter_files(root):
+        try:
+            with open(p, encoding="utf-8", errors="ignore") as f:
+                if q in f.read().lower():
+                    cands.append(os.path.relpath(p, root).replace("\\", "/"))
+                    if len(cands) >= 50:
+                        break
+        except OSError:
+            pass
+    if cands:
+        print(f"  키워드 본문 포함 파일 {len(cands)}개{' (50개 상한)' if len(cands) >= 50 else ''}:")
+        for rel in sorted(cands):
+            print(f"    {rel}")
+        print("\n  ⚠ 이것은 후보일 뿐 정식 폐쇄가 아니다 — 텍스트 일치 ≠ 목적 종속.")
     else:
-        print("\n→ 매칭 없음. 이 프로젝트에 L0~L3 주석/ONTOLOGY.md가 없거나 키워드 불일치.")
-        print("  주석 규약: 파일 상단 40줄 내 '# L0: <목적>' (# // <!-- 등 모든 주석 접두 인식)")
+        print("  본문에도 키워드 없음 — 키워드를 바꾸거나 --list로 목적 노드를 먼저 확인하라.")
+    if labeled == 0:
+        print("\n  이 프로젝트는 L0 라벨이 0개다. 정식 그래프 구축 의무:")
+        print("    1. /pyramid-label 실행 → 모든 코드 단위에 L0~L3 주석 생성")
+        print("    2. 이 도구 --reindex 재실행 → 그래프 질의 활성화")
+        print("  (라벨 생산은 pyramid_guard 훅이 이후 저장마다 강제한다)")
     return 0
 
 
