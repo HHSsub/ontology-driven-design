@@ -34,3 +34,5 @@ private/
 confidential/
 _private/
 _strategy/
+# ontology_grep 인덱스 캐시 (프로젝트별 로컬 산출물)
+.odd/

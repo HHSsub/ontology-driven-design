@@ -201,6 +201,28 @@ def _get_evolution_signals() -> tuple:
         return [], []
 
 
+def _get_unpromoted_global_rules() -> list:
+    """scope-channel match 기계 신호: 같은 규칙이 2개+ 프로젝트에서 발동 = 전역 범위 원칙.
+
+    전역 채널(전역 CLAUDE.md/principles.md) 승격 없이는 다른 프로젝트 세션이
+    그 원칙을 로드하지 못해 구조적 재발이 결정적이다.
+    승격 완료 표시 = stats entry에 "globalized" 키 (값: "YYYY-MM-DD 채널설명").
+    """
+    if not os.path.exists(STATS_PATH):
+        return []
+    try:
+        with open(STATS_PATH, encoding="utf-8") as f:
+            stats = json.load(f)
+        pending = []
+        for rid, entry in stats.items():
+            projects = entry.get("projects", {})
+            if len(projects) >= 2 and "globalized" not in entry:
+                pending.append((rid, sorted(projects.keys())))
+        return pending
+    except Exception:
+        return []
+
+
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
@@ -256,6 +278,31 @@ def main() -> int:
             "══════════════════════════════════════════════"
         )
         print(err, file=sys.stderr)
+        return 2
+
+    # scope-channel 강제: 다중 프로젝트 발동 규칙이 전역 채널 미승격이면 종료 차단
+    unpromoted = _get_unpromoted_global_rules()
+    if unpromoted:
+        lines_out = [
+            "",
+            "══════════════════════════════════════════════",
+            "❌ scope-channel 차단 — 전역 범위 원칙이 프로젝트 silo에 갇힘",
+            "══════════════════════════════════════════════",
+            "다음 규칙이 2개 이상 프로젝트에서 발동됨 = 전역 범위 원칙인데 전역 채널에 없음:",
+        ]
+        for rid, projs in unpromoted:
+            lines_out.append(f"  [{rid}] ← 발동 프로젝트: {', '.join(projs)}")
+        lines_out += [
+            "",
+            "의무 (순서대로):",
+            "  1. 해당 원칙을 전역 채널로 승격: ~/.claude/CLAUDE.md 기존 섹션 심화",
+            "     또는 ~/.claude/hooks/principles.md (SessionStart로 전 세션 주입됨)",
+            "  2. 승격 후 violation_stats.json 해당 entry에 표시:",
+            '     "globalized": "YYYY-MM-DD <채널>"',
+            "  3. 표시 전까지 세션 종료 불가.",
+            "══════════════════════════════════════════════",
+        ]
+        print("\n".join(lines_out), file=sys.stderr)
         return 2
 
     # 설계 실수 신호: 비터미널 도구 is_error:true 한정

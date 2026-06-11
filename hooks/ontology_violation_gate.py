@@ -61,8 +61,12 @@ def register_rules(registry):
         print(f"[ontology_violation_gate] stats register failed: {e}", file=sys.stderr)
 
 
-def record_trigger(rule_ids):
-    """규칙 발동 시 violation_stats.json에 횟수·시각·daily 카운트 기록 (atomic write)."""
+def record_trigger(rule_ids, project=""):
+    """규칙 발동 시 violation_stats.json에 횟수·시각·daily 카운트·프로젝트별 분포 기록 (atomic write).
+
+    projects 필드 = scope-channel match의 기계 신호: 같은 규칙이 2개+ 프로젝트에서 발동하면
+    그 원칙은 전역 범위다 → 전역 채널 승격 의무 (ontology_learning_enforce_stop이 강제).
+    """
     if not rule_ids:
         return
     try:
@@ -73,7 +77,7 @@ def record_trigger(rule_ids):
             stats = {}
         now = datetime.now(timezone.utc).isoformat()
         today = datetime.now(timezone.utc).date().isoformat()
-        for rid in rule_ids:
+        for rid in dict.fromkeys(rule_ids):
             entry = stats.get(rid, {
                 "trigger_count": 0,
                 "last_triggered": None,
@@ -88,6 +92,10 @@ def record_trigger(rule_ids):
             else:
                 entry["recent_count"] = 1
                 entry["recent_date"] = today
+            if project:
+                projects = entry.get("projects", {})
+                projects[project] = projects.get(project, 0) + 1
+                entry["projects"] = projects
             stats[rid] = entry
         # atomic write: temp 파일 쓰고 rename
         dir_ = os.path.dirname(STATS_PATH)
@@ -361,13 +369,14 @@ def apply_bash_rule(rule, command):
 
 def _main():
     try:
-        raw = sys.stdin.read()
+        raw = sys.stdin.read().lstrip('﻿')  # PowerShell BOM 방어
         data = json.loads(raw)
     except Exception:
         sys.exit(0)
 
     tool_name = data.get("tool_name", "")
     tool_input = data.get("tool_input", {})
+    project = os.path.basename(os.path.normpath(data.get("cwd", "") or os.getcwd()))
     registry = load_registry()
     register_rules(registry)  # 모든 규칙을 stats에 등록 (added_date 추적 시작)
     found_violations = []
@@ -423,7 +432,7 @@ def _main():
         except Exception:
             pass
 
-        record_trigger(triggered_ids)
+        record_trigger(triggered_ids, project)
         out_parts = []
         for rule_id, msg in found_violations:
             out_parts.append(msg)
