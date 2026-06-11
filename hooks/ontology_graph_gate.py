@@ -80,7 +80,8 @@ def _closure_check(file_path: str, transcript_path: str):
     """L0 폐쇄 강제: 다중 파일 목적 그룹의 일원을 수정하기 전,
     이 세션에서 ontology_grep으로 그 그룹을 한 번은 나열했어야 한다.
 
-    L0: L0 변경의 변경 범위는 지시문이 아니라 의존 그래프가 결정한다.
+    L0: 목적 그룹의 일원만 수정되고 나머지가 방치되면 시스템이 모순 상태로 남는다
+        — 전수 확인 없는 부분 수정이 구조 오염의 직접 원인.
     인덱스 없는 프로젝트는 통과 — 라벨 생산은 pyramid_guard가, 인덱스는 ontology_grep이 만든다.
     """
     root = _find_index_root(file_path)

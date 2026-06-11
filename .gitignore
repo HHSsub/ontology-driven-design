@@ -36,3 +36,10 @@ _private/
 _strategy/
 # ontology_grep 인덱스 캐시 (프로젝트별 로컬 산출물)
 .odd/
+
+# 훅 런타임 데이터 (세션별 측정값 — 공개 배포 금지)
+hooks/goal_registry.json
+hooks/agent_telemetry.json
+hooks/judge_state.json
+hooks/violation_stats.json
+hooks/escalation_pending.json

@@ -56,7 +56,7 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `/ontology-driven-design:skills` | List all available skills and hooks |
 | `/ontology-driven-design:frozen-exe` | Package Python script as standalone EXE |
 
-## Active Hooks (15 hooks, auto-trigger)
+## Active Hooks (21 hooks, auto-trigger)
 <!-- Source of truth: hooks/hooks.json — update this table when hooks.json changes -->
 
 ### PreToolUse
@@ -65,15 +65,18 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `websearch_yearguard` | WebSearch | Blocks queries without current year |
 | `destructive_bash_gate` | Bash | Blocks dangerous bash commands |
 | `agent_pyramid_gate` | Agent | Requires L0 + role spec for Agent calls |
+| `goal_decompose_gate` | Agent | Leader/Manager dispatch requires sub-goal decomposition + acceptance criteria; logs goal hierarchy to goal_registry.json |
+| `agent_loop_gate` | Agent | Hard-blocks repeated identical dispatch (loop) and session dispatch budget breach — enforcement, not alerting |
 | `pyramid_ontology_gate` | Edit/Write/NotebookEdit | Blocks if no L0 declaration in session |
 | `ontology_detach_gate` | Edit/Write/NotebookEdit | Blocks L2 structural file edits without prior ontology-detach |
-| `ontology_violation_gate` | Edit/Write/NotebookEdit | Checks violation_registry.json rules |
+| `ontology_violation_gate` | Edit/Write/NotebookEdit/Bash/PowerShell | Checks violation_registry.json rules; records per-project trigger stats |
+| `ontology_graph_gate` | Edit/Write/NotebookEdit | Blocks edits to multi-file L0 purpose groups without a prior ontology_grep closure query this session |
 
 ### PostToolUse
 | Hook | Trigger | Effect |
 |------|---------|--------|
 | `pptx_validate_hook` | Bash | Validates PPTX layout overflow after build_*_ppt.py |
-| `pyramid_guard` | Edit/Write | Verifies L0 connection after write |
+| `pyramid_guard` | Edit/Write | Enforces L0~L3 header labels on every saved file (≥15 lines; meta/data formats exempt) — labels feed the ontology_grep index |
 
 ### Stop
 | Hook | Trigger | Effect |
@@ -82,7 +85,17 @@ L3  Execution / Instance     물리적 닻 — concrete code, tools, physical ac
 | `ontology_declare_enforce` | Session end | Blocks if L0 declaration incomplete |
 | `assumption_declaration_gate` | Session end | Blocks if strategy docs missing [가정 명시] |
 | `git_push_enforce_stop` | Session end | Blocks if unpushed commits exist |
-| `ontology_learning_enforce_stop` | Session end | Blocks if tool error occurred without /ontology-learning |
+| `ontology_learning_enforce_stop` | Session end | Blocks if tool error occurred without /ontology-learning; blocks if a rule fired in 2+ projects without global-channel promotion (scope-channel match); reports dead/internalized rule evolution signals |
+| `agent_telemetry` | Session end + SubagentStop | Records agent dispatches, completion, skill invocations per session (observability, never blocks) |
+| `semantic_judge_gate` | Session end | Independent LLM judge (separate context, judge_rubric.md as SSOT) semantically evaluates L0 declarations written this session — meaning-based, not regex; self-loop capped |
+
+### SessionStart
+| Hook | Trigger | Effect |
+|------|---------|--------|
+| `principles.md injection` | Session start | Injects machine-unenforceable principles into every session context — the global-domain internalization channel |
+
+### Supporting data files (hooks/)
+`violation_registry.json` (seed→branch→rule), `violation_stats.json` (per-rule, per-project trigger telemetry), `thresholds.json` (every behavioral threshold with rationale, source, replacement_condition — no bare magic numbers), `goal_registry.json` (dispatched goal hierarchy), `agent_telemetry.json` (agent/skill usage), `judge_rubric.md` (L0 semantic criteria), `principles.md` (unenforceable principles)
 
 ## Philosophy
 

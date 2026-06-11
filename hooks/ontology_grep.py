@@ -1,5 +1,6 @@
-# L0: L0 변경의 영향 범위는 텍스트 검색이 아니라 그래프 질의로 결정된다.
-#     "지시문에 언급된 항목" ≠ 변경 범위. 변경 범위 = 그 목적에 종속된 노드의 폐쇄(closure).
+# L0: 목적이 변경될 때 종속 항목이 일부만 수정되면 나머지가 구버전으로 남아 산출물 구조가 오염된다
+#     — 영향 범위 전수 식별 없이는 변경이 완결될 수 없다.
+# L1: "지시문에 언급된 항목" ≠ 변경 범위. 변경 범위 = 그 목적에 종속된 노드의 폐쇄(closure).
 # 사용법:
 #   python ontology_grep.py "<목적 키워드>" [--root 프로젝트경로] [--reindex]
 #   python ontology_grep.py --list [--root 프로젝트경로]   ← 목적 노드 전체 나열
@@ -145,6 +146,7 @@ def main():
         print(f"\n인덱스: {len(idx['files'])}개 파일, 폴더 L0 {len(idx.get('folder_l0', {}))}개")
         return 0
 
+    q = args.query.lower()
     hits, purposes = closure(idx, args.query)
     print(f"질의: \"{args.query}\"  (root: {root})")
     print(f"매칭 목적 노드: {len(purposes)}개")
@@ -157,11 +159,56 @@ def main():
             print(f"      └ {reason}")
     if hits:
         print(f"\n→ 이 {len(hits)}개가 변경 범위다. 지시문에 언급된 항목만 수정하는 것 = scope 위반.")
+
+    # ━━ 목표·에이전트 계층 조회 ━━
+    _HOOKS_DIR = os.path.dirname(os.path.abspath(__file__))
+    _goal_hits = []
+    _agent_hits = []
+
+    _goal_path = os.path.join(_HOOKS_DIR, "goal_registry.json")
+    try:
+        with open(_goal_path, encoding="utf-8") as _f:
+            _goals = json.load(_f)
+        for _ts, _g in _goals.items():
+            _role = (_g.get("role") or "")
+            _l0 = (_g.get("l0_line") or "")
+            if q in _role.lower() or q in _l0.lower():
+                _project = _g.get("project", "")
+                _l0_short = _l0[:80]
+                _goal_hits.append(f"  {_ts}  role={_role}  project={_project}  {_l0_short}")
+    except Exception:
+        pass
+
+    _tel_path = os.path.join(_HOOKS_DIR, "agent_telemetry.json")
+    try:
+        with open(_tel_path, encoding="utf-8") as _f:
+            _sessions = json.load(_f)
+        for _sid, _sess in _sessions.items():
+            _proj = _sess.get("project", "")
+            for _ag in _sess.get("agents", []):
+                _desc = (_ag.get("desc") or "")
+                if q in _desc.lower():
+                    _done = _ag.get("completed", None)
+                    _model = _ag.get("model") or "(model 없음)"
+                    _status = "완료" if _done else "미완료"
+                    _agent_hits.append(f"  desc={_desc}  model={_model}  {_status}  project={_proj}")
+    except Exception:
+        pass
+
+    if _goal_hits:
+        print(f"\n목표 계층 — goal_registry 매칭 {len(_goal_hits)}건:")
+        for _line in _goal_hits:
+            print(_line)
+    if _agent_hits:
+        print(f"\n에이전트 계층 — agent_telemetry 매칭 {len(_agent_hits)}건:")
+        for _line in _agent_hits:
+            print(_line)
+
+    if hits or _goal_hits or _agent_hits:
         return 0
 
     # ━━ 자가 치유 폴백: 라벨 부재/키워드 불일치여도 데드엔드 금지 ━━
     # 원시 텍스트 스캔으로 후보 폐쇄를 제시하고, 정식 그래프 구축 경로를 지시한다.
-    q = args.query.lower()
     labeled = len(idx["files"])
     print(f"\n→ L0 주석 매칭 없음 (인덱싱된 라벨 파일: {labeled}개) — 텍스트 폴백 스캔 시작:")
     cands = []

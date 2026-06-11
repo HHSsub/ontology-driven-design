@@ -1,0 +1,155 @@
+{
+  "agent_loop_gate.LOOP_THRESHOLD": {
+    "value": 3,
+    "unit": "회",
+    "rationale": "동일 description이 3회 반복되면 접근 자체가 틀렸다는 신호 — 재시도가 아니라 방향 전환이 필요",
+    "source": "임의",
+    "replacement_condition": "실측 트랜스크립트에서 정상 작업 중 동일 description이 3회 이상 합법적으로 반복되는 케이스가 관찰될 때",
+    "added": "2026-06-11",
+    "binding_site": "agent_loop_gate.py:LOOP_THRESHOLD"
+  },
+  "agent_loop_gate.BUDGET_THRESHOLD": {
+    "value": 12,
+    "unit": "회",
+    "rationale": "세션 내 12회 이상 Agent 디스패치는 작업 분해 설계 실패 또는 루프 폭주 징후",
+    "source": "임의",
+    "replacement_condition": "정상 복잡 작업(예: 대규모 리팩터링)에서 12회 이상 디스패치가 필요한 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "agent_loop_gate.py:BUDGET_THRESHOLD"
+  },
+  "semantic_judge_gate.MAX_L0_LINES": {
+    "value": 15,
+    "unit": "줄",
+    "rationale": "판정자 프롬프트 크기와 판정 품질의 트레이드오프 — 15줄 초과 시 노이즈가 신호를 압도",
+    "source": "임의",
+    "replacement_condition": "세션 내 L0 선언이 15개를 초과하면서 판정 누락이 발생하는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "semantic_judge_gate.py:MAX_L0_LINES"
+  },
+  "semantic_judge_gate.MAX_BLOCK_COUNT": {
+    "value": 2,
+    "unit": "회",
+    "rationale": "같은 세션에서 2회 차단 후 추가 차단은 데드루프 위험 — 루프 방지로 통과",
+    "source": "임의",
+    "replacement_condition": "2회 차단 후 루프 방지 통과가 실제 의미 위반을 허용하는 사례가 관찰될 때",
+    "added": "2026-06-11",
+    "binding_site": "semantic_judge_gate.py:MAX_BLOCK_COUNT"
+  },
+  "semantic_judge_gate.JUDGE_TIMEOUT": {
+    "value": 60,
+    "unit": "초",
+    "rationale": "claude CLI 호출 대기 상한 — 60초 초과는 파이프 환경 이상 또는 모델 장애로 판단, fail-open",
+    "source": "임의",
+    "replacement_condition": "정상 환경에서 claude CLI 응답이 60초를 초과하는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "semantic_judge_gate.py:JUDGE_TIMEOUT"
+  },
+  "ontology_learning_enforce_stop.LOOKBACK": {
+    "value": 40,
+    "unit": "단계",
+    "rationale": "최근 40개 메시지 내 설계 실수 탐지 — 너무 짧으면 누락, 너무 길면 관련 없는 오류 포함",
+    "source": "임의",
+    "replacement_condition": "40개 이전 설계 실수가 탐지 누락되거나 관련 없는 오류가 포함되는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_learning_enforce_stop.py:LOOKBACK"
+  },
+  "ontology_learning_enforce_stop.DEAD_RULE_DAYS": {
+    "value": 14,
+    "unit": "일",
+    "rationale": "2주 이상 한 번도 발동 안 된 규칙은 과잉 명시 의심 — 2주는 충분한 실사용 노출 기간",
+    "source": "임의",
+    "replacement_condition": "2주 미발동이 과잉 명시가 아닌 정상적인 드문 케이스(예: 분기별 배포)를 위한 규칙에 잘못 적용될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_learning_enforce_stop.py:DEAD_RULE_DAYS"
+  },
+  "ontology_learning_enforce_stop.INTERNALIZED_DAYS": {
+    "value": 30,
+    "unit": "일",
+    "rationale": "마지막 발동 후 30일 침묵 = 행동 내재화 신호 — 1개월은 충분한 습관화 기간",
+    "source": "임의",
+    "replacement_condition": "30일 침묵이 내재화가 아닌 환경 변화(프로젝트 전환)로 설명되는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_learning_enforce_stop.py:INTERNALIZED_DAYS"
+  },
+  "ontology_learning_enforce_stop.ESCALATION_FLAG_TTL_HOURS": {
+    "value": 4,
+    "unit": "시간",
+    "rationale": "escalation 플래그 유효 시간 — 4시간은 단일 세션 경계 추정값",
+    "source": "임의",
+    "replacement_condition": "단일 세션이 4시간을 초과하거나 플래그가 다음 세션으로 오탐 이월되는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_learning_enforce_stop.py:ESCALATION_FLAG_TTL_HOURS"
+  },
+  "ontology_learning_enforce_stop.UNPROMOTED_MIN_PROJECTS": {
+    "value": 2,
+    "unit": "개",
+    "rationale": "같은 규칙이 2개 이상 프로젝트에서 발동되면 전역 범위 원칙으로 판단",
+    "source": "임의",
+    "replacement_condition": "2개 프로젝트 발동이 우연의 일치(같은 도메인 작업)인 케이스가 반복 관찰될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_learning_enforce_stop.py:_get_unpromoted_global_rules:len(projects)>=2"
+  },
+  "ontology_violation_gate.ESCALATION_DAILY_THRESHOLD": {
+    "value": 2,
+    "unit": "회",
+    "rationale": "오늘 동일 규칙이 2회 이상 발동되면 L1 세계관 재검토 필요 신호",
+    "source": "임의",
+    "replacement_condition": "같은 날 동일 규칙 2회 발동이 학습 중 정상 반복(예: 페어 프로그래밍)으로 설명되는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_violation_gate.py:recent_count>=2"
+  },
+  "pyramid_guard.MIN_LINES_FOR_CHECK": {
+    "value": 15,
+    "unit": "줄",
+    "rationale": "15줄 미만 파일은 헤더 선언 강제 부적합 — 너무 짧은 파일에 L0 주석 강요는 노이즈",
+    "source": "임의",
+    "replacement_condition": "15줄 미만 파일에서 L0 누락이 실제 아키텍처 위반으로 이어지는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "pyramid_guard.py:MIN_LINES_FOR_CHECK"
+  },
+  "pyramid_guard.HEADER_LINES": {
+    "value": 20,
+    "unit": "줄",
+    "rationale": "파일 상단 20줄 내에 L 선언이 없으면 선언이 묻혀있는 것 — 가시성 기준",
+    "source": "임의",
+    "replacement_condition": "정상적인 파일 구조(shebang+license+imports)에서 20줄을 초과해야 L0를 쓸 수 있는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "pyramid_guard.py:HEADER_LINES"
+  },
+  "ontology_grep.HEAD_LINES": {
+    "value": 40,
+    "unit": "줄",
+    "rationale": "파일 상단 40줄 스캔으로 L 주석 헤더 관례 커버 — 40줄을 넘는 헤더는 설계 냄새",
+    "source": "임의",
+    "replacement_condition": "L 선언이 40줄 이후에 합법적으로 위치하는 파일 구조가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_grep.py:HEAD_LINES"
+  },
+  "ontology_grep.MAX_SIZE": {
+    "value": 2097152,
+    "unit": "바이트",
+    "rationale": "2MB 초과 파일은 생성 코드·번들·데이터로 판단 — L 주석 탐색 대상 아님",
+    "source": "임의",
+    "replacement_condition": "2MB 초과 .py/.ts 소스 파일이 실제 L 주석을 포함해야 하는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_grep.py:MAX_SIZE"
+  },
+  "ontology_grep.FALLBACK_CANDIDATE_LIMIT": {
+    "value": 50,
+    "unit": "개",
+    "rationale": "텍스트 폴백 스캔 상한 — 50개 초과 시 키워드가 너무 일반적이어서 유용하지 않음",
+    "source": "임의",
+    "replacement_condition": "50개 상한으로 인해 실제 관련 파일이 누락되는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_grep.py:fallback_cands>=50"
+  },
+  "ontology_graph_gate.ROOT_SEARCH_DEPTH": {
+    "value": 8,
+    "unit": "단계",
+    "rationale": "프로젝트 루트 탐색 상한 8단계 — 8단계를 초과하는 디렉터리 깊이는 이상 구조",
+    "source": "임의",
+    "replacement_condition": "정상 프로젝트에서 .odd/ontology_index.json이 8단계보다 깊은 경로에 위치하는 케이스가 실측될 때",
+    "added": "2026-06-11",
+    "binding_site": "ontology_graph_gate.py:range(8)"
+  }
+}

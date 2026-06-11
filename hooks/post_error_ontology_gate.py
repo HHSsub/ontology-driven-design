@@ -81,6 +81,16 @@ _INFRA_FAILURE_PATTERNS = (
     "[SSL]",
 )
 
+# 유저 의지 패턴 — 오류의 발생 주체 3분류 중 "유저 의지"
+# (내 판단 실수=학습 / 환경·인프라=재시도 / 유저 의지=순응·방향 전환)
+# 거부·인터럽트는 실수가 아니라 라우팅 신호다. 학습 강제 대상 아님.
+_USER_VOLITION_PATTERNS = (
+    "The user doesn't want to proceed",
+    "tool use was rejected",
+    "Request interrupted by user",
+    "The user doesn't want to take this action",
+)
+
 # 기계적/문법 오류 패턴 — shell quoting, bash syntax 등 판단 실수가 아님
 # PowerShell→bash quoting 오류, `&;` 같은 bash 문법 오류,
 # /tmp/ 임시 파일 SyntaxError (생성된 스크립트 quote strip으로 인한 오류) 포함
@@ -95,6 +105,9 @@ _MECHANICAL_ERROR_PATTERNS = (
     "FullyQualifiedErrorId : ExpectedValue", # PowerShell 파서 오류 변형
     "Sorry: IndentationError",  # py_compile 결과 — 편집-검증-수정 사이클 내 기계적 피드백
     "Sorry: SyntaxError",       # py_compile 결과 — 편집-검증-수정 사이클 내 기계적 피드백
+    # write_existing_guard.py 차단 — 기존 파일 Write 사전방지 훅 = 설계 실수 아님
+    "[BLOCKED] Write 차단",
+    "기존 파일. Read tool로",
 )
 
 
@@ -128,6 +141,18 @@ def _is_mechanical_error(block: dict) -> bool:
     else:
         text = ""
     return any(pat in text for pat in _MECHANICAL_ERROR_PATTERNS)
+
+
+def _is_user_volition(block: dict) -> bool:
+    """유저의 거부·인터럽트 — 실수가 아니라 유저의 방향 결정. 건너뜀."""
+    content = block.get("content", "")
+    if isinstance(content, str):
+        text = content
+    elif isinstance(content, list):
+        text = " ".join(c.get("text", "") for c in content if isinstance(c, dict))
+    else:
+        text = ""
+    return any(pat in text for pat in _USER_VOLITION_PATTERNS)
 
 
 def _is_infra_failure(block: dict) -> bool:
@@ -204,6 +229,8 @@ def _last_error_idx(msgs: list) -> int:
             if isinstance(block, dict) and block.get("type") == "tool_result" and block.get("is_error"):
                 if _is_hook_block(block):
                     continue  # 훅이 차단한 것 = 실수 아님, 건너뜀
+                if _is_user_volition(block):
+                    continue  # 유저 거부·인터럽트 = 방향 결정, 실수 아님, 건너뜀
                 if _is_infra_failure(block):
                     continue  # 인프라/네트워크 실패 = 코드 실수 아님, 건너뜀
                 if _is_mechanical_error(block):
