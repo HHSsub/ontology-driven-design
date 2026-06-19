@@ -34,6 +34,17 @@ _HOOK_BLOCK_SIGNATURES = (
     "PostToolUse:",     # Claude Code hook block prefix
 )
 
+# 제외 패턴 SSOT = post_error_ontology_gate (이중 정의 금지 — 드리프트 실증됨 2026-06-11)
+try:
+    from post_error_ontology_gate import (
+        _MECHANICAL_ERROR_PATTERNS as _SHARED_MECHANICAL,
+        _INFRA_FAILURE_PATTERNS as _SHARED_INFRA,
+        _USER_VOLITION_PATTERNS as _SHARED_VOLITION,
+    )
+    _SHARED_EXCLUDE = _SHARED_MECHANICAL + _SHARED_INFRA + _SHARED_VOLITION
+except Exception:
+    _SHARED_EXCLUDE = ()
+
 
 def _is_hook_block_content(block: dict) -> bool:
     content = block.get("content", "")
@@ -73,6 +84,12 @@ def _is_design_error(content: list, tool_name_map: dict) -> bool:
             tid = block.get("tool_use_id", "")
             tool_name = tool_name_map.get(tid, "")
             if tool_name in TERMINAL_TOOLS:
+                continue
+            # 공유 제외 패턴 (SSOT: post_error_ontology_gate) — 기계적 제약·인프라·유저 의지
+            _c = block.get("content", "")
+            _text = _c if isinstance(_c, str) else " ".join(
+                x.get("text", "") for x in _c if isinstance(x, dict)) if isinstance(_c, list) else ""
+            if any(pat in _text for pat in _SHARED_EXCLUDE):
                 continue
             return True
     return False

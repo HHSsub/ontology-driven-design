@@ -41,4 +41,16 @@ AI coding agents execute L3 (implementation) brilliantly while losing track of L
 
 ---
 
+## Not patterns but agents — enforce meaning with meaning
+
+ODD's enforcement layer splits in two. Confusing the two turns the whole of governance into decoration.
+
+**Fixed-pattern violations** (shell syntax, filename rules, banned keywords) are caught by regex — instant, free, deterministic. Here, patterns are the right tool.
+
+**Meaning violations** are different. "Did this L0 disguise an implementation means as a purpose?", "Did it change existing code without analyzing the premise?", "Did it declare completion without external verification?" — these judgments have infinite expressions. Regex won't catch ten of ten million cases. Endlessly stacking cases into a regex file is accumulation, not evolution, and is permanently breached by every new expression.
+
+**Hence ODD's invariant principle: semantic judgment, triggering, and learning are never faked with patterns — they are always done by an agent (LLM judge).** Meaning must be caught by meaning. `semantic_judge_gate` is the implementation of this principle — it delegates the truth of an L0 declaration to an independent agent. Pattern hooks for genuinely mechanical violations only; everything that requires judgment goes to an agent.
+
+---
+
 *Hwang Hoe Sun (황회선) — [knowgram.vercel.app](https://knowgram.vercel.app)*

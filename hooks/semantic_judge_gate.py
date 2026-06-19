@@ -71,8 +71,22 @@ def _increment_block_count(session_id: str) -> int:
 
 # ── 트랜스크립트 파싱 ─────────────────────────────────────────────────────────
 
+def _still_in_file(line: str, file_path: str) -> bool:
+    """판정 대상은 역사가 아니라 현재 상태 — 이미 재작성·삭제된 줄은 판정에서 제외.
+    파일 확인 불가(삭제·이동·권한)면 보수적으로 False (존재하지 않는 진실은 채점하지 않는다)."""
+    try:
+        with open(file_path, encoding="utf-8", errors="ignore") as f:
+            return line in f.read()
+    except Exception:
+        return False
+
+
 def _extract_l0_lines(transcript_path: str) -> list[str]:
-    """Edit/Write/NotebookEdit tool_use의 content/new_string에서 L0 줄 추출 (중복 제거, 최대 MAX_L0_LINES)."""
+    """Edit/Write/NotebookEdit tool_use의 content/new_string에서 L0 줄 추출.
+
+    트랜스크립트는 역사다 — 같은 줄이 이후 재작성됐으면 과거 버전은 판정 대상이 아니다.
+    각 줄을 그 파일의 현재 내용과 대조하여 '지금도 존재하는' 줄만 반환 (중복 제거, 최대 MAX_L0_LINES).
+    """
     try:
         # utf-8-sig: BOM이 있는 파일(일부 Windows 툴 생성)도 처리
         with open(transcript_path, encoding="utf-8-sig") as f:
@@ -81,7 +95,7 @@ def _extract_l0_lines(transcript_path: str) -> list[str]:
         return []
 
     seen: set[str] = set()
-    results: list[str] = []
+    candidates: list[tuple[str, str]] = []  # (줄, 파일경로)
 
     for raw in raw_lines:
         try:
@@ -103,16 +117,21 @@ def _extract_l0_lines(transcript_path: str) -> list[str]:
                 continue
 
             inp = block.get("input", {})
+            fpath = inp.get("file_path", "") or inp.get("path", "")
             text = inp.get("content", "") + "\n" + inp.get("new_string", "")
 
             for match in _L0_LINE_RE.findall(text):
                 normalized = match.strip()
                 if normalized and normalized not in seen:
                     seen.add(normalized)
-                    results.append(normalized)
-                    if len(results) >= MAX_L0_LINES:
-                        return results
+                    candidates.append((normalized, fpath))
 
+    results: list[str] = []
+    for line, fpath in candidates:
+        if fpath and _still_in_file(line, fpath):
+            results.append(line)
+            if len(results) >= MAX_L0_LINES:
+                break
     return results
 
 

@@ -108,6 +108,10 @@ _MECHANICAL_ERROR_PATTERNS = (
     # write_existing_guard.py 차단 — 기존 파일 Write 사전방지 훅 = 설계 실수 아님
     "[BLOCKED] Write 차단",
     "기존 파일. Read tool로",
+    # 도구 타임아웃 클래스 — 터미널성 기계 오류: 즉시 재시도/경로 축소로 해결, 학습 대상 아님
+    # (Stop 훅 TERMINAL_TOOLS 제외와 동일 판정 — SSOT 정합, 2026-06-11)
+    "search timed out",          # Glob/Grep ripgrep 타임아웃 (대용량 폴더)
+    "Command timed out after",   # Bash/PowerShell 명령 타임아웃
 )
 
 

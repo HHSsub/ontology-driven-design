@@ -417,13 +417,23 @@ def _main():
         triggered_ids = [rule_id for rule_id, _ in found_violations]
 
         # L1 에스컬레이션 감지: 오늘 이미 2회+ 발동된 규칙이 또 발동하면 경고
+        # guardrail 클래스 제외 — 생성 prior 기원 위반은 stateless 환경에서 상수율이 정상.
+        # 차단 자체가 임무 수행이며, escalation은 학습 규칙(감쇠 기대)에만 유의미.
+        # recent_count는 전 세션·전 프로젝트 일일 합산이라 고빈도 guardrail은 매일
+        # escalation이 확정되어 무관 세션까지 Stop 차단을 상속한다 (2026-06-11 detach).
         today = datetime.now(timezone.utc).date().isoformat()
         escalation_parts = []
+        guardrail_ids = {
+            r.get("id") for r in registry.get("rules", [])
+            if r.get("rule_class") == "guardrail"
+        }
         try:
             if os.path.exists(STATS_PATH):
                 with open(STATS_PATH, encoding="utf-8") as _sf:
                     current_stats = json.load(_sf)
                 for rid in triggered_ids:
+                    if rid in guardrail_ids:
+                        continue
                     entry = current_stats.get(rid, {})
                     if entry.get("recent_date") == today and entry.get("recent_count", 0) >= 2:
                         escalation_parts.append(
@@ -446,7 +456,8 @@ def _main():
                 "→ /ontology-driven-design:ontology-learning 실행 전까지 세션 종료 차단"
             )
 
-        os.write(1, "\n".join(out_parts).encode("utf-8", errors="replace"))
+        # exit 2 차단 시 Claude에게 전달되는 채널은 stderr(fd 2)뿐 — fd 1은 무음 유실
+        os.write(2, "\n".join(out_parts).encode("utf-8", errors="replace"))
 
         # escalation_pending.json 플래그 기록 → Stop 훅이 ontology-learning 미실행 시 차단
         if escalation_parts:

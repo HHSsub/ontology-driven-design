@@ -1,6 +1,23 @@
 # Auto-Enforced Hooks
 
-The ODD plugin installs **10 hooks** automatically. Hooks fire **without any user command** — every time Claude Code performs certain actions.
+The ODD plugin installs several hooks automatically. Hooks fire **without any user command** — every time Claude Code performs certain actions.
+
+## Core architecture — Pattern hooks vs Agent judges
+
+Hooks split into two layers. This distinction is the foundation of ODD enforcement.
+
+| Layer | Catches | How | Examples |
+|-------|---------|-----|----------|
+| **Pattern hooks** (deterministic) | **Fixed-pattern** violations — shell syntax, filename rules, banned keywords, path filters | Regex/string matching. Instant, free, deterministic | `websearch_yearguard`, `python3_guard`, `git_push_enforce_stop` |
+| **Agent judges** (semantic) | **Meaning** violations — is this L0 a real purpose, was the premise analyzed, was completion declared without external verification | Delegated to an LLM (cheap model) as a natural-language judgment | `semantic_judge_gate` |
+
+**Invariant principle: semantic judgment is never faked with patterns — it is always done by an agent.**
+
+Regex catches only surface patterns. Judgments like "did this L0 disguise an implementation detail as a purpose", "did it change existing code without analyzing the premise", "did it repeat a failing approach without rethinking L1" have ten-million expressions — regex won't catch ten of them. Meaning must be judged by meaning — i.e. by an **agent (LLM judge)**.
+
+Endlessly stacking rules into a regex file (case accumulation) is an L3 patch and a sign of evolutionary failure. Use pattern hooks only for truly mechanical violations; delegate everything that requires judgment to an agent.
+
+---
 
 ## Summary
 
@@ -237,6 +254,40 @@ If no verification command found **after** the last edit, blocks the response.
 ## Verify Installation
 
 Check hooks are installed correctly:
+
+## semantic_judge_gate (agent-based L0 meaning judgment)
+
+**File**: `hooks/semantic_judge_gate.py`
+**Fires**: Stop — every time Claude completes a response
+
+### Why an agent, not a pattern
+
+`ontology_violation_gate` (a pattern hook) only checks whether the string `"L0:"` **exists**. But a hollow L0 (e.g. `L0: implement JSON parsing` — an implementation act sitting in the purpose slot) passes the string check. **Whether an L0 is a real purpose is a semantic judgment, impossible for regex.**
+
+`semantic_judge_gate` closes this structural hole. It extracts the `L0:` lines from this session's Edit/Write calls and delegates to an **independent judge (claude CLI, cheap model)**, getting PASS/FAIL against the criteria in `judge_rubric.md`.
+
+### Behavior
+
+1. Extract `L0:` lines from Edit/Write in the transcript (only lines still present in the current file — judging the present state, not history)
+2. No L0 lines → pass (zero judging cost)
+3. Build a prompt from the full `judge_rubric.md` + the L0 lines → call the agent
+4. On FAIL, block (exit 2) with the reason, prompting a rewrite
+5. **Dead-loop guard**: after 2 blocks in one session it passes (recorded in `judge_state.json`)
+6. **fail-open**: if the judge call fails or times out, it passes — a judge outage never blocks work
+
+### judge_rubric.md = the criteria SSOT
+
+The criteria live as data in `judge_rubric.md`, not in code. To change the criteria, edit the markdown, not the Python. The judge decides on these criteria alone and does not soften them with its own training knowledge.
+
+```
+❌ FAIL: L0: complete within a 10-second timeout   (a numeric metric in the purpose slot)
+❌ FAIL: L0: speed up responses with Redis caching  (a technical means in the purpose slot)
+✅ PASS: L0: the customer completes a quote without human help
+```
+
+> This is where ODD actually implements the principle "semantic judgment must always be done by an agent." Any governance that cannot be expressed as a pattern can be extended the same way — with an agent judge.
+
+---
 
 ```bash
 cat ~/.claude/settings.json | grep -A5 "hooks"

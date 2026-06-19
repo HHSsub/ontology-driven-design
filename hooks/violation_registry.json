@@ -1,6 +1,5 @@
 {
   "_comment": "씨앗(L0)→가지(L1)→열매(rule) 3계층 구조. 가지는 반드시 대응하는 열매(rule)가 있어야 이 파일에 존재한다. 강제 불가 지침은 principles.md에 분리 기록.",
-  "_scope": "전역 규칙만. 개인/프로젝트 특화 케이스는 violation_registry.personal.json에 분리 보관.",
   "_architecture": "ontology_violation_gate.py가 이 파일을 읽어 PreToolUse 시 적용. 위반 통계는 violation_stats.json에 기록.",
 
   "_self_limit_protocol": {
@@ -30,7 +29,7 @@
     {
       "id": "l0_grounding",
       "enabled": true,
-      "description": "어떤 산출물·행동도 L0 달성과 연결되지 않으면 완성이 아니다. 행동 전 L0를 묻는다. 배포·실행·변경 완료 선언은 외부 환경 직접 관찰 후에만 가능 — 소스 코드 분석 = 내부 가설, 유저의 외부 환경 관찰 = 진실.",
+      "description": "어떤 산출물·행동도 L0 달성과 연결되지 않으면 완성이 아니다. 행동 전 L0를 묻는다. 배포·실행·변경 완료 선언은 외부 환경 직접 관찰 후에만 가능 — 소스 코드 분석 = 내부 가설, 유저의 외부 환경 관찰 = 진실. 유저가 '안 됐다' '아직 있다'고 하면 내 내부 분석을 취소하고 외부 환경을 먼저 재확인.",
       "branches": ["repeated_failure_l1_escalation"],
       "exit_condition": "AI가 L0 없이는 L2/L3 행동을 구조적으로 시작할 수 없게 될 때"
     },
@@ -72,30 +71,46 @@
       "fruit_rule": "creator_license_authority",
       "domain": "창작자 저작권·라이선스·소유권 결정 보호",
       "differentiation": "judge_independence 씨앗의 저작권 도메인 분화. 라이선스·저작권·소유권 표시는 창작자(유저)의 고유 결정 영역이다. AI가 '오픈소스 = MIT 기본' 등 훈련 패턴을 유저 동의 없이 적용하는 것은 창작자 권한 침해.",
-      "exit_condition": "라이선스·저작권 표시 변경 전 창작자 동의 확인이 자동 반사 행동으로 내재화될 때"
+      "exit_condition": "라이선스·저작권 표시 변경 전 창작자 동의 확인이 자동 반사 행동으로 내재화되어 무승인 수정이 0건이 될 때"
     },
     {
       "id": "tool_os_environment_match",
       "seed_ref": "l0_grounding",
-      "fruit_rule": "bash_ps_syntax_in_bash_tool + ps_posix_curl_flags",
+      "fruit_rule": "bash_ps_syntax_in_bash_tool + ps_posix_curl_flags + ssh_grep_exit_semantic",
       "domain": "파일 시스템 조회/조작 시 OS 환경에 맞는 도구 선택",
-      "differentiation": "l0_grounding 씨앗의 실행 환경 도메인 분화. Bash tool = POSIX shell, PowerShell tool = PS cmdlet. OS 무관 전용 도구 우선: (1) 파일목록→Glob, (2) 파일읽기→Read, (3) 텍스트검색→Grep. Shell이 반드시 필요한 경우: Windows→PowerShell, Linux/Mac→Bash.",
-      "exit_condition": "OS 전용 도구 vs 범용 도구 선택이 자동 반사 행동으로 내재화될 때"
+      "differentiation": "l0_grounding 씨앗의 실행 환경 도메인 분화. 파일 시스템 작업에서 도구 선택은 OS에 종속된다. Bash tool = POSIX shell, PowerShell tool = PS cmdlet. OS 무관 전용 도구 우선순위: (1) 파일목록→Glob, (2) 파일읽기→Read, (3) 텍스트검색→Grep. Shell이 반드시 필요한 경우: Windows→PowerShell, Linux/Mac→Bash. [2026-06-11 L1 심화] 40회/2일 반복 발동의 구조 원인 = 내재화 채널 부재: 게이트 차단은 세션 내 피해 방지일 뿐 세션 간 학습이 아니다(세션 stateless). 원칙의 저장 채널 범위 = 적용 범위여야 함(scope-channel match) → 전역 CLAUDE.md 환경 섹션에 도구 선택 우선순위 명시(2026-06-11). 이후 발동 추이가 감소하지 않으면 채널이 아니라 원칙 표현 자체를 재검토. [2026-06-11 심화 2] 문법뿐 아니라 '경로 네임스페이스'도 실행 프로세스가 소유 — 같은 Bash 명령줄 안이라도 임베디드 인터프리터(python -c/node -e)는 별도 Windows 프로세스이므로 Git Bash 가상 경로(/tmp, /c/)를 해석 못 한다. 멀티레이어 명령의 각 레이어는 문법·이스케이프·경로 모두 자기 인터프리터 규칙을 따른다.",
+      "exit_condition": "OS 전용 도구 vs 범용 도구 선택이 자동 반사 행동으로 내재화되어 잘못된 shell 도구 선택이 0건이 될 때"
+    },
+    {
+      "id": "label_leakage_prevention",
+      "seed_ref": "l0_grounding",
+      "fruit_rule": "ml_label_as_feature_source",
+      "domain": "ML 피처 설계 시 레이블 파생 피처 절대 금지",
+      "differentiation": "l0_grounding 씨앗의 ML 피처 출처 도메인 분화. 피처의 합법적 출처 = 예측 시점 이전 독립 관찰 신호만. 레이블에서 파생된 통계는 OOF/leave-one-out 등 어떤 통계 트릭을 써도 합법화 불가. 합법 출처: 센서 측정, 타임스탬프, 피험자 정체성. 금지 출처: 예측 타겟, 타겟 이력, 타겟 통계.",
+      "exit_condition": "피처 구상 단계에서 레이블 출처 확인이 자동 반사 행동으로 내재화되어 레이블 파생 피처 설계가 0건이 될 때"
+    },
+    {
+      "id": "cv_strategy_from_test_structure",
+      "seed_ref": "l0_grounding",
+      "fruit_rule": "cv_strategy_requires_test_structure_verification",
+      "domain": "ML CV 전략 선택 전 test set 구조 역추출 의무",
+      "differentiation": "l0_grounding 씨앗의 ML CV 전략 도메인 분화. CV 전략의 진실 소스 = 현재 test set 직접 조회 결과. 논문이 LOSO를 썼더라도 현재 대회 test 조건이 같은지 검증 필수. 코드에 # CV_STRATEGY_VERIFIED 마커 없으면 미검증이다.",
+      "exit_condition": "ML CV 전략 선택 전 test set 구조 직접 확인이 자동 반사 행동으로 내재화되어 마커 없는 CV 코드 작성이 0건이 될 때"
     },
     {
       "id": "event_driven_wait",
       "seed_ref": "l0_grounding",
       "fruit_rule": "sleep_polling_ban",
       "domain": "대기(wait)가 필요한 작업에서 이벤트 기반 메커니즘 의무 사용",
-      "differentiation": "l0_grounding 씨앗의 대기 메커니즘 도메인 분화. Claude Code 환경에서 sleep = 컨텍스트 블로킹 = 시스템 차단 대상. 대기 목적별: (1) 단일 완료 → run_in_background=true; (2) 조건 충족 → until 루프; (3) 반복 이벤트 → Monitor tool.",
-      "exit_condition": "대기 필요 시 Monitor/run_in_background 선택이 반사 행동으로 내재화될 때"
+      "differentiation": "l0_grounding 씨앗의 대기 메커니즘 도메인 분화. Claude Code 환경에서 sleep = 컨텍스트 블로킹 = 시스템 차단 대상. 대기 목적별 올바른 도구: (1) 단일 완료 → run_in_background=true; (2) 조건 충족 → until 루프; (3) 반복 이벤트 → Monitor tool. Windows 로컬 파일 감시: Monitor 금지, run_in_background+until 방식으로 대체.",
+      "exit_condition": "대기 필요 시 Monitor/run_in_background 선택이 반사 행동으로 내재화되어 sleep 사용이 0건이 될 때"
     },
     {
       "id": "repeated_failure_l1_escalation",
       "seed_ref": "l0_grounding",
       "fruit_rule": "repeated_fix_iteration + escalation_in_gate_stats",
       "domain": "동일 L2 접근 반복 실패 시 L1 세계관 재검토 강제",
-      "differentiation": "l0_grounding 씨앗의 반복 실패 도메인 분화. 동일 L2 접근이 N회 이상 실패하면 세부 패치가 아닌 L1(세계관) 재검토가 필요하다. 사례: Playwright 자동화 20회+ 실패 → fetch 기반으로 전환 시 즉시 성공. 기계 감지 가능한 신호: (1) 파일명 반복 시도 번호 (patch_N, fix_vN, attempt_N), (2) violation_stats의 daily recent_count >= 3.",
+      "differentiation": "l0_grounding 씨앗의 반복 실패 도메인 분화. 동일 L2 접근이 N회 이상 실패하면 세부 패치가 아닌 L1(세계관) 재검토가 필요하다. 사례: Playwright 자동화 20회+ 실패 → fetch 기반으로 전환 시 즉시 성공. 같은 문제를 다른 기술 레이어로 해결했다면 L2 접근이 틀린 것이다. 기계 감지 가능한 신호: (1) 파일명 반복 시도 번호 (patch_N, fix_vN, attempt_N) — 이 파일명 자체가 루프의 물리적 증거, (2) violation_stats.json의 daily recent_count >= 3 — 동일 규칙 반복 발동 = L1 에스컬레이션 신호.",
       "exit_condition": "반복 시도 번호 파일명이 0건, daily 동일 규칙 3회+ 발동 패턴이 0건이 될 때"
     }
   ],
@@ -106,7 +121,7 @@
       "branch_ref": "creator_ownership_authority",
       "seed_ref": "judge_independence",
       "enabled": true,
-      "exit_condition": "라이선스·저작권 표시 변경 전 창작자 동의 확인이 자동 반사 행동으로 내재화될 때",
+      "exit_condition": "라이선스·저작권 표시 변경 전 창작자 동의 확인이 자동 반사 행동으로 내재화되어 무승인 수정이 0건이 될 때",
       "l0": "저작권·라이선스·소유권 결정은 창작자의 고유 권한 — AI 임의 설정 금지",
       "l1_pattern": "프로젝트 메타데이터 파일에 라이선스/저작권 표시를 추가하거나 변경하는 편집",
       "file_filter": {
@@ -144,31 +159,118 @@
       ]
     },
     {
+      "id": "cv_strategy_requires_test_structure_verification",
+      "branch_ref": "cv_strategy_from_test_structure",
+      "seed_ref": "l0_grounding",
+      "enabled": true,
+      "exit_condition": "ML CV 전략 선택 전 test set 구조 직접 확인이 자동 반사 행동으로 내재화되어 마커 없는 CV 코드 작성이 0건이 될 때",
+      "l0": "CV 전략의 진실 소스 = test set 구조 직접 조회 결과. 어떤 CV 전략이든(LOSO/KFold/GroupKFold/TimeSeriesSplit 포함) 논문/관행 무검증 복사 금지.",
+      "l1_pattern": "ML .py 파일에서 CV 전략 코드 — test 구조 확인 마커(# CV_STRATEGY_VERIFIED:) 없이 사용",
+      "file_filter": {
+        "path_must_contain_any": ["sota_", "pipeline", "train", "model", "experiment", "dacon", "test_workspace"],
+        "extensions": [".py"]
+      },
+      "checks": [
+        {
+          "type": "content_pattern",
+          "description": "CV 전략 코드 감지 — test 구조 확인 마커(# CV_STRATEGY_VERIFIED:) 없음",
+          "patterns": ["(?i)(\\bKFold\\b|cross_val_score|cross_validate|StratifiedKFold|GroupKFold|LeaveOneOut|LeaveOneGroupOut|loso|leave.one.subject|leave_one_subject|LeaveOneSubjectOut|within_subject_kfold)"],
+          "required_alongside": ["#\\s*CV_STRATEGY_VERIFIED"],
+          "block_message": "CV 전략 코드 차단 — test 구조 확인 마커 없음.\n\nCV 전략 선택의 진실 소스는 test set 구조다. 논문/관행에서 무검증 복사 금지.\n\n먼저 실행:\n  python -c \"import pandas as pd; tr=pd.read_csv('train.csv'); te=pd.read_csv('test.csv'); print('공통 피험자:', set(tr.id)&set(te.id)); print('날짜겹침:', len(set(tr.date)&set(te.date)))\"\n\n  공통 피험자 있음 + 날짜겹침=0 → within-subject K-fold\n  공통 피험자 없음               → LOSO\n  날짜겹침 있음                  → 시간 기반 split\n\n확인 후 파일 상단에 마커 추가:\n  # CV_STRATEGY_VERIFIED: within_subject_kfold — reason: 공통 피험자 10명, 날짜겹침 0\n이 마커가 있으면 차단이 해제됩니다."
+        },
+        {
+          "type": "content_pattern",
+          "description": "TimeSeriesSplit 절대 차단",
+          "patterns": ["\\bTimeSeriesSplit\\b"],
+          "block_message": "TimeSeriesSplit 절대 차단.\n\n이유: 이 대회(Dacon ETRI ID 236690)에서 train/test 날짜는 INTERLEAVED 구조다.\n  - train_max > test_min (예: id08: train_max=2024-09-16, test_min=2024-07-31)\n  - TimeSeriesSplit은 시간순 분리 구조에서만 유효. 이 대회에 적용 불가.\n\nCV 전략은 within-subject K-fold ONLY."
+        }
+      ]
+    },
+    {
       "id": "bash_ps_syntax_in_bash_tool",
       "branch_ref": "tool_os_environment_match",
       "seed_ref": "l0_grounding",
       "enabled": true,
-      "exit_condition": "Bash tool 선택 후 POSIX 문법 자동 전환이 반사 행동으로 내재화될 때",
+      "rule_class": "guardrail",
+      "exit_condition": "구조적 제거(Bash tool deny 또는 자동 번역 레이어) 도입, 또는 차단을 통과한 실행 피해가 실제 발생할 때 재검토. 발동률 감소는 이 규칙의 성공 지표가 아님 — 생성 prior 기원 위반은 stateless 세션 환경에서 상수율이 정상이며, 차단 자체가 임무 수행임 (2026-06-11 detach: 텍스트 채널 3종 투입 후에도 55회 상수율 실측)",
       "l0": "명령 문법은 OS가 아니라 실행 도구가 결정한다. Bash tool = POSIX shell. PowerShell tool = PS cmdlet.",
-      "l1_pattern": "Bash tool 명령에 PowerShell 전용 cmdlet/문법 패턴 사용",
+      "l1_pattern": "Bash tool 명령에 PowerShell 전용 cmdlet/문법 패턴 사용 — Test-Path, Get-Content, Select-Object, Where-Object, ForEach-Object, Write-Host, Get-ChildItem, ConvertFrom-Json, $var = value 등",
       "checks": [
         {
           "type": "bash_command_pattern",
           "description": "Bash tool 명령에 PS 전용 cmdlet 패턴 감지",
           "patterns": ["\\bTest-Path\\b", "\\bGet-Content\\b", "\\bSelect-Object\\b", "\\bWhere-Object\\b", "\\bForEach-Object\\b", "\\bWrite-Host\\b", "\\bGet-ChildItem\\b", "\\bConvertFrom-Json\\b", "\\bSet-Content\\b", "\\bOut-File\\b", "\\bMeasure-Object\\b", "\\bStart-Sleep\\b", "\\bNew-Item\\b", "\\bRemove-Item\\b", "\\bCopy-Item\\b", "\\bMove-Item\\b"],
-          "block_message": "Bash tool에 PowerShell 문법 사용 차단.\n\nBash tool = POSIX shell. PS cmdlet은 PowerShell tool에서만 사용 가능.\n\n대체 명령:\n  Get-Content file | Select-Object -Last N  →  tail -N file\n  Test-Path path                            →  [ -e path ] 또는 ls path 2>/dev/null\n  Get-ChildItem -Recurse                    →  find . -type f\n\nPowerShell tool로 전환하거나 POSIX 문법으로 재작성하세요."
+          "block_message": "Bash tool에 PowerShell 문법 사용 차단.\n\n[바인딩 원칙] 문법은 OS도 작업 언어도 아닌 '실행 도구의 인터프리터'가 결정한다. Bash tool = POSIX sh. 이 메시지 이후 같은 세션에서 다른 PS cmdlet 변형도 전부 동일 위반이다 — 아래 표 전체를 지금 적용하라.\n\n[0순위] 쉘이 정말 필요한가? 파일 읽기→Read, 검색→Grep, 목록→Glob, 쓰기→Write 도구가 먼저다.\n\n[클래스 전체 변환표]\n  Get-Content f                →  cat f\n  Get-Content f -Tail N        →  tail -n N f\n  Select-Object -First/-Last N →  head -n N / tail -n N\n  Test-Path p                  →  [ -e p ]\n  Get-ChildItem (-Recurse)     →  ls / find . -type f\n  Where-Object {...}           →  grep / awk\n  ForEach-Object {...}         →  xargs / while read\n  Write-Host x                 →  echo x\n  ConvertFrom-Json             →  jq\n  Set-Content / Out-File       →  > 리다이렉트 (또는 Write 도구)\n  Measure-Object -Line         →  wc -l\n  New-Item -ItemType Directory →  mkdir -p\n  Remove-Item (-Recurse)       →  rm (-rf)\n  Copy-Item / Move-Item        →  cp / mv\n  Start-Sleep                  →  사용 금지 (이벤트 기반 대기 — sleep_polling_ban 참조)\n  $var = value                 →  var=value (공백 없이)\n\n단, Windows 절대경로(C:\\)·PS cmdlet이 본질인 작업이면 명령을 번역하지 말고 PowerShell tool로 전환하라."
         },
         {
           "type": "bash_command_pattern",
-          "description": "Bash tool 명령에 Python raw syntax 직접 입력 감지",
+          "description": "Bash tool 명령에 Python raw syntax 직접 입력 감지 (python -c 래핑 없이)",
           "patterns": ["^import\\s+\\w+", "^from\\s+\\w+\\s+import"],
-          "block_message": "Bash tool에 Python 코드 직접 입력 차단.\n\nBash tool = POSIX shell interpreter. Python 구문은 bash에서 실행 불가.\n\n올바른 방법:\n  python3 -c \"import shutil; shutil.copy('src', 'dst')\"\n  또는 Write tool로 .py 파일 작성 후: python3 script.py"
+          "block_message": "Bash tool에 Python 코드 직접 입력 차단.\n\nBash tool = POSIX shell interpreter. Python 구문(import/from...import)은 bash에서 실행 불가.\n\n올바른 방법:\n  python -c \"import shutil; shutil.copy('src', 'dst')\"\n  또는 Write tool로 .py 파일 작성 후: python script.py"
         },
         {
           "type": "bash_command_pattern",
-          "description": "Bash tool 명령에 Windows cmd 전용 구문 감지",
-          "patterns": ["\\bif\\s+exist\\b", "\\bif\\s+not\\s+exist\\b", "\\bdir\\s+[/\\\\]", "\\bdel\\s+[\"'\\\\A-Za-z]", "\\brd\\s+[/\\\\\"']"],
-          "block_message": "Bash tool에 Windows cmd 문법 사용 차단.\n\nBash tool = POSIX sh. Windows cmd 구문은 bash에서 실행 불가.\n\n대체:\n  if exist path   →  [ -e path ] 또는 PowerShell: Test-Path path\n  dir /b /s       →  find . -type f 또는 Glob 도구\n  del filename    →  rm filename 또는 PowerShell: Remove-Item path"
+          "description": "Bash tool 명령에 Windows cmd 전용 구문 감지 — if exist, dir /s, type 등",
+          "patterns": ["\\bif\\s+exist\\b", "\\bif\\s+not\\s+exist\\b", "\\bdir\\s+[/\\\\]", "\\btype\\s+[A-Za-z]", "\\bdel\\s+[\"'\\\\A-Za-z]", "\\brd\\s+[/\\\\\"']"],
+          "block_message": "Bash tool에 Windows cmd 문법 사용 차단.\n\nBash tool = POSIX sh. Windows cmd 구문(if exist, dir /s, type, del, rd)은 bash에서 실행 불가 → exit 127.\n\n대체:\n  if exist path      →  [ -e path ] 또는 PowerShell: Test-Path path\n  dir /b /s          →  find . -type f 또는 Glob 도구\n  type filename      →  cat filename 또는 Read 도구\n  del filename       →  rm filename 또는 PowerShell: Remove-Item path\n  rd /s /q dir       →  rm -rf dir 또는 PowerShell: Remove-Item -Recurse path"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "SSH 원격 명령에서 시스템 python3(3.6)으로 /home/ 경로 스크립트 실행 탐지",
+          "patterns": ["ssh.*(?<!bin/)python3(?:\\.11)?\\s+(?:-[a-z]\\s+)?/home/"],
+          "block_message": "서버 시스템 python3 사용 차단.\n\n서버의 python3 = Python 3.6 (asyncio.run 없음, aiosqlite 없음).\n반드시 venv 인터프리터 사용:\n  /home/rocky/autovid_mgx/venv/bin/python3.11 /path/to/script.py\n\n확인: ssh ... 'ps aux | grep uvicorn | head -1' → venv 경로 추출"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "SSH 원격 명령에서 disown 사용 탐지 — 비대화형 SSH 셸에서 job control 명령은 exit 255 유발",
+          "patterns": ["ssh\\b.*\\bdisown\\b"],
+          "block_message": "SSH 원격 명령에서 disown 사용 차단.\n\ndisown은 대화형 bash job control 명령. 비대화형 SSH 셸에서는 사용 불가 → exit 255.\n\nSSH 백그라운드 실행 올바른 방법:\n  ssh user@host 'nohup CMD > logfile 2>&1 &'"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "SSH 원격 명령에서 single-quote heredoc 사용 탐지",
+          "patterns": ["ssh\\b.*<<\\s*'[A-Z_]*(?:EOF|PYEOF|HEREDOC|SCRIPT|PYTHON)[A-Z_]*'"],
+          "block_message": "SSH single-quote heredoc으로 코드 전달 차단.\n\n단일따옴표 heredoc(<<'PYEOF') 내부 Python 코드에 single quote(')가 있으면 bash 종료자 충돌 → Exit code 2.\n\n올바른 방법:\n  1. Write tool로 로컬 .py 파일 작성\n  2. PowerShell: scp -i key.pem script.py rocky@server:/home/rocky/\n  3. ssh -i key.pem rocky@server '/home/rocky/autovid_mgx/venv/bin/python3.11 /home/rocky/script.py'"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "Bash tool 명령에 Windows 절대경로(C:\\, D:\\ 등) 사용 탐지",
+          "patterns": ["(?<![a-zA-Z])([A-Za-z]):[/\\\\][^/\\\\]"],
+          "block_message": "Bash tool에서 Windows 절대경로 차단.\n\nBash tool = POSIX shell → C:\\, D:\\ 등 Windows 드라이브 경로 인식 불가 → exit 2/127.\n\n도구 선택 순서 (이 순서를 반드시 따를 것):\n  1. 파일/폴더 목록 → Glob tool (OS 무관)\n  2. 파일 내용 읽기 → Read tool (OS 무관)\n  3. 텍스트/패턴 검색 → Grep tool (OS 무관)\n  4. 위 세 가지로 불가한 경우에만 → PowerShell tool로 전환\n\nBash tool에 Windows 경로를 쓰는 것은 1-3 단계를 건너뛴 증거."
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "Bash tool 명령 내 임베디드 Windows 네이티브 인터프리터(python/node)에 Git Bash 가상 경로(/tmp, /c/) 전달 탐지",
+          "patterns": ["(?:python3?|node)\\s+(?:-c|-e)\\s[^|;&]*['\\\"]/(?:tmp|mnt|c|d)/"],
+          "block_message": "임베디드 인터프리터에 Git Bash 가상 경로 전달 차단.\n\n[바인딩 원칙] 경로 네임스페이스는 그 경로를 해석하는 '프로세스'가 소유한다. Git Bash의 /tmp, /c/는 bash 프로세스의 가상 매핑일 뿐 — python.exe/node.exe(Windows 네이티브)는 이를 모른다 → FileNotFoundError.\n\n같은 명령줄 안이라도 레이어가 다르면 네임스페이스가 다르다:\n  bash 레이어: curl -o /tmp/f.html   (OK — bash가 해석)\n  python 레이어: open('/tmp/f.html') (실패 — python.exe가 해석)\n\n올바른 방법:\n  1. Write tool로 .py 파일 작성 (Windows 경로 사용) → PowerShell tool로 python script.py 실행\n  2. 임베디드 코드에는 환경변수 경유: python -c \"import os,tempfile; p=tempfile.gettempdir()\"\n  3. 작업 디렉토리 상대경로 사용 (양쪽 레이어 동일 해석)",
+          "exit_condition": "임베디드 코드 작성 시 '이 경로를 해석하는 프로세스는 누구인가' 질문이 반사 행동이 되어 레이어 간 경로 전달 오류가 0건이 될 때"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "nohup/background 명령 후 &; 패턴 탐지",
+          "patterns": ["&\\s*;"],
+          "block_message": "bash 명령에서 '&;' 패턴 차단.\n\n'&'(백그라운드) 다음에 ';'(구분자)는 bash 문법 오류 → exit 2.\n\n수정: '&;' → '& ' (세미콜론 제거)"
+        }
+      ]
+    },
+    {
+      "id": "ml_label_as_feature_source",
+      "branch_ref": "label_leakage_prevention",
+      "seed_ref": "l0_grounding",
+      "enabled": true,
+      "exit_condition": "ML 피처 구상 단계에서 레이블 출처 확인이 자동 반사 행동으로 내재화되어 레이블 파생 피처 코드 작성이 0건이 될 때",
+      "l0": "피처의 합법적 출처는 예측 대상 이전에 독립적으로 관찰 가능한 신호만. 레이블(Q/S 값)에서 파생된 어떤 통계도 피처가 될 수 없다.",
+      "l1_pattern": "ML 파이프라인에서 타겟 컬럼(예측해야 할 레이블)이 피처 생성 소스로 사용됨",
+      "file_filter": {
+        "path_must_contain_any": ["sota_", "pipeline", "train", "experiment", "dacon", "test_workspace"],
+        "extensions": [".py"]
+      },
+      "checks": [
+        {
+          "type": "content_pattern",
+          "description": "레이블 파생 피처 생성 패턴 감지",
+          "patterns": ["(?i)(hist_[qs][1-4]_|target.*encod|encod.*target|label.*hist|groupby.*['\"]?(q[1-3]|s[1-4])['\"]?.*\\.mean\\(|['\"]?(q[1-3]|s[1-4])['\"]?.*groupby.*\\.mean\\()"],
+          "block_message": "레이블 파생 피처 차단.\n\n피처의 합법적 출처 = 센서 신호, 타임스탬프, 피험자 정체성 특성만.\nQ1/Q2/Q3/S1/S2/S3/S4 및 이것들의 이력/통계/인코딩은 피처 소스 금지.\n\nOOF(현재 행 제외) 트릭도 구조적 누출을 해결하지 못함.\n\n대안:\n  - 수면 시간대 프록시: 충전 시작 시각, 화면 마지막 사용 시각\n  - 활동 일관성(IS): Van Someren 공식으로 센서로만 계산\n  - HR/HRV: 야간 심박 평균·표준편차"
         }
       ]
     },
@@ -177,15 +279,15 @@
       "branch_ref": "event_driven_wait",
       "seed_ref": "l0_grounding",
       "enabled": true,
-      "exit_condition": "대기 필요 시 Monitor/run_in_background 선택이 반사 행동으로 내재화될 때",
+      "exit_condition": "대기 필요 시 Monitor/run_in_background 선택이 반사 행동으로 내재화되어 sleep 사용이 0건이 될 때",
       "l0": "대기(wait) = 이벤트 기반. sleep = 컨텍스트 블로킹 = Claude Code 시스템 차단 대상.",
-      "l1_pattern": "Bash tool 명령에서 sleep N 명령 사용",
+      "l1_pattern": "Bash tool 명령에서 sleep N 명령 사용 — 폴링 또는 대기 목적",
       "checks": [
         {
           "type": "bash_command_pattern",
-          "description": "Bash tool sleep 명령 사용 탐지",
+          "description": "Bash tool 명령 텍스트에 sleep N 패턴 감지 — SSH wrapper 내부 포함",
           "patterns": ["\\bsleep\\s+\\d+"],
-          "block_message": "sleep 명령 차단 — Claude Code에서 sleep = 시스템 차단 대상.\n\n올바른 대기 방법:\n  단일 완료 알림: Bash run_in_background=true\n  조건 대기: Bash run_in_background=true + 'until <condition>; do sleep 2; done'\n  반복 이벤트 스트림: Monitor tool"
+          "block_message": "sleep 명령 차단 — 실행 컨텍스트(로컬/SSH 원격/Docker) 무관하게 명령 텍스트에 sleep N 있으면 차단.\n\n올바른 대기 방법:\n  SSH 프로세스 완료 후 결과 수신: run_in_background=true 로 `ssh host 'CMD > /log 2>&1'` 실행 → 완료 통보 대기\n  SSH 로그 스트리밍: Monitor tool + `ssh host 'tail -f /log'`\n  단순 로그 확인: 별도 `ssh host 'tail -40 /log'` 호출 (sleep 없이)\n\n금지 패턴 예시:\n  ssh host 'until cond; do sleep 3; done'  ← SSH 내부 sleep도 차단\n  sleep 40 && ssh host '...'               ← sleep chaining 차단"
         }
       ]
     },
@@ -194,15 +296,22 @@
       "branch_ref": "tool_os_environment_match",
       "seed_ref": "l0_grounding",
       "enabled": true,
-      "exit_condition": "PowerShell tool에서 POSIX curl 플래그 자동 회피가 반사 행동으로 내재화될 때",
+      "exit_condition": "PowerShell tool에서 POSIX curl 플래그 자동 회피가 반사 행동으로 내재화되어 alias 충돌이 0건이 될 때",
       "l0": "명령 문법은 OS가 아니라 실행 도구가 결정한다. PowerShell tool에서 curl = Invoke-WebRequest alias — POSIX 전용 플래그(-s/-o/-w) 미지원.",
-      "l1_pattern": "PowerShell tool 명령에서 curl POSIX 전용 플래그(-s, -o, -w) 사용",
+      "l1_pattern": "PowerShell tool 명령에서 curl POSIX 전용 플래그(-s, -o, -w) 사용 — alias 충돌로 exit 1",
       "checks": [
+        {
+          "type": "ps_command_pattern",
+          "description": "PowerShell tool에서 여러 줄 인라인 코드(-c/-e) 투입 탐지 — PS 5.1이 줄바꿈 포함 인용 인자를 ScriptBlock으로 오파싱",
+          "patterns": ["(?:python3?|node)\\s+(?:-c|-e)\\s+\"[^\"]*\\n", "(?:python3?|node)\\s+(?:-c|-e)\\s+'[^']*\\n"],
+          "block_message": "PowerShell에서 여러 줄 인라인 코드(-c/-e) 차단.\n\n[바인딩 원칙] 임베디드 코드는 운반 도구의 파서를 먼저 통과한다 — 운반 도구가 바뀌면(bash→PS) 안전했던 패턴도 무효. PS 5.1은 줄바꿈 포함 인용 문자열을 ScriptBlock으로 오파싱 → ParameterBindingException.\n\n올바른 방법 (우선순위):\n  1. Write tool로 .py 파일 작성 → python script.py 실행 (여러 줄 코드의 유일한 안전 경로)\n  2. 한 줄로 압축 가능하면: python -c \"import json; print(...)\" (줄바꿈 0개)\n\nbash에서 되던 멀티라인 -c·heredoc은 PS에서 전부 동일 위반이다.",
+          "exit_condition": "여러 줄 임베디드 코드를 항상 파일로 작성하는 것이 반사 행동이 되어 인라인 멀티라인 투입이 0건이 될 때"
+        },
         {
           "type": "ps_command_pattern",
           "description": "PowerShell tool에서 curl POSIX 플래그 사용 탐지",
           "patterns": ["\\bcurl\\s+.*-[sowSL]\\b", "\\bcurl\\s+-[sowSL]"],
-          "block_message": "PowerShell에서 curl POSIX 플래그 차단.\n\ncurl in PowerShell = Invoke-WebRequest alias → -s/-o/-w 미지원 → exit 1.\n\n올바른 방법:\n  HTTP 상태: (Invoke-WebRequest -Uri 'URL' -UseBasicParsing).StatusCode\n  또는 Bash tool로 전환 후: curl -s -o /dev/null -w '%{http_code}' URL"
+          "block_message": "PowerShell에서 curl POSIX 플래그 차단.\n\n[바인딩 원칙] 문법은 OS도 작업 언어도 아닌 '실행 도구의 인터프리터'가 결정한다. PS 5.1에서 curl = Invoke-WebRequest alias → POSIX 플래그(-s/-o/-w/-S/-L) 미지원 → exit 1. wget도 동일 alias다. 이 메시지 이후 같은 세션의 모든 HTTP 호출에 적용하라.\n\n[클래스 전체 변환표]\n  상태 코드 확인  →  (Invoke-WebRequest -Uri 'URL' -UseBasicParsing).StatusCode\n  본문 저장       →  Invoke-WebRequest -Uri 'URL' -OutFile path\n  JSON API 호출   →  Invoke-RestMethod -Uri 'URL'\n\nPOSIX curl 그대로가 필요하면(플래그 다수·파이프 조합) 명령을 번역하지 말고 Bash tool로 전환: curl -s -o /dev/null -w '%{http_code}' URL"
         }
       ]
     },
@@ -221,8 +330,53 @@
         {
           "type": "file_path_pattern",
           "description": "파일명에 반복 시도 번호 패턴 감지 (patch_N, fix_N, attempt_N, _v2, _v3...)",
-          "patterns": ["(?i)(patch|fix|attempt|retry|hotfix)[_-]\\d{1,2}(?:\\.py|_|$)", "(?i)_v[2-9][0-9]*\\.py$"],
+          "patterns": ["(?i)(patch|fix|attempt|retry|hotfix)[_-]\\d{1,2}(?:\\.py|_|$)", "(?i)_v[2-9][0-9]*\\.py$", "(?i)dk_retry_\\d+[a-z]+\\.py$"],
           "block_message": "반복 시도 파일명 차단.\n\n이 파일명은 동일 접근을 N번째 시도하고 있음을 나타냅니다 — L2 패칭 루프의 물리적 증거.\n\n체크:\n  1. 현재 접근 방식이 왜 반복 실패하는가? → 구조적 한계인가?\n  2. 이 목적을 달성하는 다른 L1 접근 방식은? → 기술 전환, API 변경, 아키텍처 재설계\n\n/ontology-driven-design:ontology-learning 실행 → L1 세계관 재검토 먼저\n\n사례: Playwright 20회+ 실패 → fetch 기반 전환 시 즉시 성공"
+        }
+      ]
+    },
+    {
+      "id": "ssh_grep_exit_semantic",
+      "branch_ref": "tool_os_environment_match",
+      "seed_ref": "l0_grounding",
+      "enabled": true,
+      "exit_condition": "SSH grep/pgrep/pkill/diff 명령 작성 시 || true 자동 추가가 반사 행동으로 내재화되어 0건이 될 때",
+      "l0": "exit code 의미는 명령어마다 다르다. grep/pgrep/diff exit 1 = 정상 결과(no match/differs). PowerShell/Bash is_error 판단은 exit code에 의존하므로 비표준 exit semantic 명령은 반드시 || true로 중립화해야 한다.",
+      "l1_pattern": "SSH 원격 명령에 grep/pgrep/pkill/diff 사용 + || true 또는 ; true 없음 → exit 1이 is_error 오분류로 게이트 차단",
+      "checks": [
+        {
+          "type": "ps_command_pattern",
+          "description": "PowerShell SSH 명령에 grep/pgrep/pkill/diff + || true 없음",
+          "patterns": ["\\bssh\\b[^\\n]*\\bgrep\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bpgrep\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bpkill\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bdiff\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))"],
+          "block_message": "SSH + grep/pgrep/pkill/diff 명령에 || true 없음 차단.\n\ngrep=exit1(no match), pgrep=exit1(not found), diff=exit1(differs), pkill=exit1(not found) — 정상이지만 is_error 오분류.\n\n수정:\n  'grep -c pattern file'  →  'grep -c pattern file || true'\n  'pgrep -f pattern'      →  'pgrep -f pattern || true'\n  'pkill -f pattern'      →  'pkill -f pattern; true'"
+        },
+        {
+          "type": "bash_command_pattern",
+          "description": "Bash SSH 명령에 grep/pgrep/pkill/diff + || true 없음",
+          "patterns": ["\\bssh\\b[^\\n]*\\bgrep\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bpgrep\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bpkill\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))", "\\bssh\\b[^\\n]*\\bdiff\\b(?![^\\n]*(?:\\|\\|\\s*true|;\\s*true))"],
+          "block_message": "SSH + grep/pgrep/pkill/diff 명령에 || true 없음 차단.\n\ngrep=exit1(no match), pgrep=exit1(not found) — is_error 오분류 방지.\n\n수정: 명령 끝에 || true 추가"
+        }
+      ]
+    },
+    {
+      "id": "external_recipient_no_persona_eval",
+      "branch_ref": "output_completion_standard",
+      "seed_ref": "l0_grounding",
+      "enabled": true,
+      "exit_condition": "외부 수신자 대상 HTML 파일 수정 전 persona-eval 자동 발동이 반사 행동으로 내재화되어 마커 없는 수정 시도가 0건이 될 때",
+      "l0": "산출물의 완성 기준은 수신자가 결정한다. 수신자가 외부인이면 그 외부인 에이전트가 PASS를 줄 때가 완성이다. 코드/파일 동작 = 완성이 아님.",
+      "l1_pattern": "외부 수신자(공모전 참가자, 투자자, 일반 대중 등) 대상 HTML 파일에 persona-eval 완료 마커 없이 Edit/Write 시도",
+      "file_filter": {
+        "path_must_contain_any": ["공모전_seed", "공모전_포스터", "aius-site", "aius_site"],
+        "extensions": [".html"]
+      },
+      "checks": [
+        {
+          "type": "content_pattern",
+          "description": "외부 수신자 대상 HTML 파일에 persona-eval 완료 마커 부재 — 채점 없이 수정 시도",
+          "patterns": ["<!DOCTYPE|<html"],
+          "required_alongside": ["persona-eval:done"],
+          "block_message": "외부 수신자 대상 HTML 파일 — persona-eval 완료 마커 없음.\n\nL0: 외부 수신자(대학생, VC, 참가자)가 PASS를 줄 때가 완성이다. 코드 저장 = 완성 아님.\n\n필수 순서:\n  1. persona-driven-eval-loop 스킬 발동 (Skill tool)\n  2. 외부 수신자 에이전트 PASS(≥80%) 확인\n  3. 이 파일 상단에 <!-- persona-eval:done YYYY-MM-DD --> 마커 추가\n  4. 그 다음 수정 진행\n\n현재 이 파일에 persona-eval 완료 마커가 없습니다."
         }
       ]
     }
